@@ -1,678 +1,579 @@
 <!DOCTYPE html>
-<html lang="ca">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador del Rosco Guanyador - Pasapalabra de 2 Jugadors</title>
-    <style>
-        :root {
-            --primary-blue: #004b93;
-            --secondary-blue: #007bff;
-            --success-green: #28a745;
-            --danger-red: #dc3545;
-            --orange-pasapalabra: #ffc107;
-            --bg-light: #f8f9fa;
-        }
+<meta charset="UTF-8">
+<title>Rosco con voz</title>
+<style>
+  :root{
+    --bg: #0e1526;
+    --bg-panel: #141d33;
+    --bg-panel-2: #1b2540;
+    --gold: #e8b34c;
+    --gold-dim: #a97f2f;
+    --cream: #f4ecd8;
+    --muted: #8a93ab;
+    --green: #4fd18b;
+    --red: #f2646b;
+    --line: #2a3555;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    background: radial-gradient(1400px 800px at 50% -10%, #1a2544 0%, var(--bg) 60%);
+    color: var(--cream);
+    min-height:100vh;
+    padding: 24px 24px 50px;
+  }
+  .wrap{ max-width: 1500px; margin: 0 auto; }
+  header{ text-align:center; margin-bottom: 18px; }
+  header h1{ font-size: 1.6rem; letter-spacing: .02em; margin: 0 0 4px; font-weight: 700; }
+  header h1 span{ color: var(--gold); }
+  header p{ margin:0; color: var(--muted); font-size: .85rem; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-light);
-            margin: 0;
-            padding: 20px;
-            color: #333;
-        }
+  .panel{
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
+  .controls{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center;
+    margin-bottom: 16px;
+  }
+  button{
+    font: inherit; font-weight: 600; font-size: .85rem;
+    border: 1px solid var(--line); background: var(--bg-panel-2); color: var(--cream);
+    padding: 10px 16px; border-radius: 9px; cursor: pointer;
+    transition: transform .08s ease, background .15s ease, border-color .15s ease;
+  }
+  button:hover{ border-color: var(--gold-dim); }
+  button:active{ transform: scale(.96); }
+  button:disabled{ opacity:.35; cursor:not-allowed; }
+  button.primary{ background: var(--gold); color:#231705; border-color: var(--gold); }
+  button.primary:hover{ background:#f0c265; }
+  button.danger{ background: transparent; color: var(--red); border-color: var(--red); }
+  button.ghost{ background: transparent; }
 
-        h1, h2, h3 {
-            text-align: center;
-            color: var(--primary-blue);
-        }
+  .timer{ font-variant-numeric: tabular-nums; font-size: 1.6rem; font-weight: 700; color: var(--gold); min-width: 84px; text-align:center; }
+  select{ font: inherit; background: var(--bg-panel-2); color: var(--cream); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
 
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 25px;
-            flex-wrap: wrap;
-        }
+  /* ---- Stage: big rosco + slim sidebar ---- */
+  .stage{
+    display:grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 980px){ .stage{ grid-template-columns: 1fr; } }
 
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
+  .rosco-panel{ display:flex; justify-content:center; padding: 32px; }
+  .rosco-holder{
+    position:relative;
+    width: min(78vh, 78vw, 760px);
+    aspect-ratio: 1 / 1;
+  }
+  .letter{
+    position:absolute;
+    width: clamp(38px, 4.6vw, 58px);
+    height: clamp(38px, 4.6vw, 58px);
+    left:0; top:0;
+    border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    font-weight: 700; font-size: clamp(1rem, 1.6vw, 1.3rem);
+    background: var(--bg-panel-2); border: 2px solid var(--line);
+    color: var(--muted);
+    transform: translate(-50%,-50%);
+    transition: background .2s ease, border-color .2s ease, color .2s ease, transform .2s ease;
+  }
+  .letter.current{
+    background: var(--gold); border-color: var(--gold); color:#231705;
+    transform: translate(-50%,-50%) scale(1.22);
+    box-shadow: 0 0 0 8px rgba(232,179,76,.16);
+  }
+  .letter.correct{ background: var(--green); border-color: var(--green); color:#082818; }
+  .letter.wrong{ background: var(--red); border-color: var(--red); color:#2b0508; }
+  .letter.passed{ border-color: var(--gold-dim); color: var(--gold-dim); }
 
-        .btn-main { background-color: var(--primary-blue); color: white; }
-        .btn-success { background-color: var(--success-green); color: white; }
-        .btn-danger { background-color: var(--danger-red); color: white; }
-        .btn-warning { background-color: var(--orange-pasapalabra); color: #333; }
-        .btn-secondary { background-color: #6c757d; color: white; }
+  .rosco-center{
+    position:absolute; inset: 21%; border-radius:50%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background: var(--bg-panel); border: 1px solid var(--line);
+    text-align:center; padding: 4%;
+  }
+  .rc-letter{ font-size: clamp(2.2rem, 5vw, 3.4rem); font-weight: 800; color: var(--gold); line-height:1; margin-bottom: .4em; }
+  .rc-clue{ font-size: clamp(.95rem, 1.6vw, 1.3rem); line-height:1.45; max-width: 90%; }
+  .rc-status{ margin-top: .8em; font-size: clamp(.7rem, 1.1vw, .85rem); color: var(--muted); }
+  .rc-idle{ color: var(--muted); font-size: clamp(1rem, 1.8vw, 1.4rem); }
 
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
-        button:active { transform: translateY(1px); }
+  /* ---- Sidebar ---- */
+  .sidebar{ display:flex; flex-direction:column; gap: 14px; }
+  .stat-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat{
+    background: var(--bg-panel-2); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 8px; text-align:center;
+  }
+  .stat .n{ font-size: 1.5rem; font-weight: 800; color: var(--cream); }
+  .stat .l{ font-size: .68rem; color: var(--muted); letter-spacing:.03em; margin-top: 2px; }
+  .stat.green .n{ color: var(--green); }
+  .stat.red .n{ color: var(--red); }
+  .stat.gold .n{ color: var(--gold); }
 
-        .game-area {
-            display: flex;
-            justify-content: space-between;
-            gap: 40px;
-            margin-top: 20px;
-        }
+  .mic-row{ display:flex; align-items:center; gap:10px; }
+  .mic-dot{ width: 12px; height:12px; border-radius:50%; background: var(--line); flex-shrink:0; }
+  .mic-dot.listening{ background: var(--red); animation: pulse 1.2s infinite; }
+  @keyframes pulse{
+    0%{ box-shadow: 0 0 0 0 rgba(242,100,107,.5); }
+    70%{ box-shadow: 0 0 0 10px rgba(242,100,107,0); }
+    100%{ box-shadow: 0 0 0 0 rgba(242,100,107,0); }
+  }
+  .mic-status{ font-size: .8rem; color: var(--muted); }
 
-        .player-panel {
-            flex: 1;
-            background: #f1f4f9;
-            padding: 20px;
-            border-radius: 10px;
-            border: 2px solid #e2e8f0;
-            text-align: center;
-        }
+  .legend{ font-size: .72rem; color: var(--muted); line-height: 1.6; }
+  .legend b{ color: var(--cream); }
 
-        .player-panel.active {
-            border-color: var(--secondary-blue);
-            background-color: #e6f0fa;
-            box-shadow: 0 0 10px rgba(0, 123, 255, 0.2);
-        }
+  /* ---- Bottom answer bar ---- */
+  .answer-panel{ margin-top: 18px; }
+  .answer-row{ display:flex; gap: 14px; align-items:stretch; flex-wrap: wrap; }
+  .answer-box{
+    flex: 1 1 320px;
+    background: var(--bg-panel-2); border: 1px dashed var(--line);
+    border-radius: 10px; padding: 14px 16px; min-height: 30px;
+    font-size: 1.15rem; display:flex; align-items:center;
+  }
+  .answer-box.correct{ border-color: var(--green); background: rgba(79,209,139,.08); }
+  .answer-box.wrong{ border-color: var(--red); background: rgba(242,100,107,.08); }
+  .answer-box .placeholder{ color: var(--muted); font-style: italic; font-size:.9rem; }
 
-        .timer {
-            font-size: 32px;
-            font-weight: bold;
-            color: #4a5568;
-            margin: 10px 0;
-        }
+  .verdict-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .verdict-row button{ flex: 1 1 130px; }
 
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin: 15px 0;
-            font-weight: bold;
-        }
+  textarea{
+    width:100%; min-height: 220px; background: var(--bg-panel-2); color: var(--cream);
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px; font: 13px/1.5 monospace;
+    resize: vertical;
+  }
+  .edit-help{ font-size:.78rem; color: var(--muted); margin: 6px 0 10px; }
+  .edit-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top: 10px; }
 
-        .stat-box {
-            padding: 8px;
-            border-radius: 6px;
-            background: white;
-        }
-        .stat-correct { color: var(--success-green); border: 1px solid var(--success-green); }
-        .stat-wrong { color: var(--danger-red); border: 1px solid var(--danger-red); }
-        .stat-passed { color: var(--orange-pasapalabra); border: 1px solid var(--orange-pasapalabra); }
-        .stat-left { color: #666; border: 1px solid #ddd; }
-
-        .current-turn-info {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            min-height: 100px;
-            margin-top: 15px;
-            border: 1px solid #cbd5e1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .letter-badge {
-            font-size: 24px;
-            font-weight: bold;
-            background: var(--primary-blue);
-            color: white;
-            width: 45px;
-            height: 45px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            margin-bottom: 8px;
-        }
-
-        .question-text {
-            font-size: 16px;
-            font-style: italic;
-            margin-bottom: 10px;
-        }
-
-        .action-zone {
-            margin-top: 25px;
-            text-align: center;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-        }
-
-        .voice-status {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 10px;
-        }
-
-        .game-actions {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .editor-section {
-            margin-top: 40px;
-            border-top: 2px dashed #cbd5e1;
-            padding-top: 20px;
-        }
-
-        .editors-container {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 15px;
-        }
-
-        .editor-box {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .editor-box textarea {
-            width: 100%;
-            height: 250px;
-            padding: 10px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            font-family: monospace;
-            resize: vertical;
-            box-sizing: border-box;
-        }
-
-        .editor-box label {
-            font-weight: bold;
-            margin-bottom: 6px;
-            color: var(--primary-blue);
-        }
-
-        .help-keys {
-            background: #e2e8f0;
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 13px;
-            text-align: center;
-            margin-top: 15px;
-        }
-    </style>
+  .hint{ text-align:center; color: var(--muted); font-size:.75rem; margin-top: 16px; }
+  .modal-backdrop{
+    position:fixed; inset:0; background: rgba(6,9,18,.72); display:none;
+    align-items:center; justify-content:center; padding: 20px; z-index: 50;
+  }
+  .modal-backdrop.open{ display:flex; }
+  .modal{ background: var(--bg-panel); border:1px solid var(--line); border-radius:14px; padding:20px; max-width: 640px; width:100%; }
+  .modal h2{ margin-top:0; font-size:1.05rem; }
+</style>
 </head>
 <body>
-<div class="container">
-    <h1>Simulador del Rosco Guanyador</h1>
-    <h2>Mode 2 Jugadors amb Veu i Solució</h2>
+<div class="wrap">
+  <header>
+    <h1>Rosco <span>con voz</span></h1>
+    <p>La IA lee la pregunta y escucha tu respuesta &middot; tú solo confirmas</p>
+  </header>
 
-    <div class="controls">
-        <button class="btn-main" id="btn-empezar" onclick="començarPartida()">▶ Empeçar</button>
-        <button class="btn-secondary" onclick="pausarPartida()">⏸ Pausa</button>
-        <button class="btn-danger" onclick="reiniciarPartida()">↻ Reiniciar</button>
+  <div class="controls panel">
+    <button id="btnEdit" class="ghost">✏️ Editar palabras</button>
+    <button id="btnStart" class="primary">▶ Empezar</button>
+    <button id="btnPause" disabled>⏸ Pausa</button>
+    <button id="btnRestart" class="danger">↻ Reiniciar</button>
+    <div class="timer" id="timer">02:30</div>
+    <select id="secondsSelect">
+      <option value="120">2:00 min</option>
+      <option value="150" selected>2:30 min</option>
+      <option value="180">3:00 min</option>
+      <option value="240">4:00 min</option>
+    </select>
+  </div>
+
+  <div class="stage" style="margin-top:16px;">
+    <div class="panel rosco-panel">
+      <div class="rosco-holder" id="rosco">
+        <div class="rosco-center" id="roscoCenter">
+          <div class="rc-idle">Pulsa <b>Empezar</b><br>para jugar</div>
+        </div>
+      </div>
     </div>
 
-    <!-- PANEU DELS DOS JUGADORS -->
-    <div class="game-area">
-        <!-- JUGADOR 1 -->
-        <div class="player-panel" id="panel-j1">
-            <h3>JUGADOR 1</h3>
-            <div class="timer" id="timer-j1">02:30</div>
-            <div class="stats">
-                <div class="stat-box stat-correct"><span id="correctes-j1">0</span> Correctes</div>
-                <div class="stat-box stat-wrong"><span id="fallades-j1">0</span> Fallades</div>
-                <div class="stat-box stat-passed"><span id="pasades-j1">0</span> Pasades</div>
-                <div class="stat-box stat-left"><span id="restants-j1">27</span> Restants</div>
-            </div>
-            <div class="current-turn-info">
-                <div class="letter-badge" id="badge-j1">-</div>
-                <div class="question-text" id="pregunta-j1">Pulsa "Empeçar" per començar.</div>
-            </div>
+    <div class="sidebar">
+      <div class="panel">
+        <div class="stat-grid">
+          <div class="stat green"><div class="n" id="stCorrect">0</div><div class="l">ACIERTOS</div></div>
+          <div class="stat red"><div class="n" id="stWrong">0</div><div class="l">FALLOS</div></div>
+          <div class="stat gold"><div class="n" id="stPass">0</div><div class="l">PASADAS</div></div>
+          <div class="stat"><div class="n" id="stLeft">27</div><div class="l">RESTANTES</div></div>
         </div>
-
-        <!-- JUGADOR 2 -->
-        <div class="player-panel" id="panel-j2">
-            <h3>JUGADOR 2</h3>
-            <div class="timer" id="timer-j2">02:30</div>
-            <div class="stats">
-                <div class="stat-box stat-correct"><span id="correctes-j2">0</span> Correctes</div>
-                <div class="stat-box stat-wrong"><span id="fallades-j2">0</span> Fallades</div>
-                <div class="stat-box stat-passed"><span id="pasades-j2">0</span> Pasades</div>
-                <div class="stat-box stat-left"><span id="restants-j2">27</span> Restants</div>
-            </div>
-            <div class="current-turn-info">
-                <div class="letter-badge" id="badge-j2">-</div>
-                <div class="question-text" id="pregunta-j2">Esperant inici...</div>
-            </div>
+      </div>
+      <div class="panel">
+        <div class="mic-row">
+          <div class="mic-dot" id="micDot"></div>
+          <div class="mic-status" id="micStatus">Micrófono inactivo</div>
         </div>
+      </div>
+      <div class="panel legend">
+        <div><b>Enter</b> = correcta</div>
+        <div><b>X</b> = incorrecta</div>
+        <div><b>Espacio</b> = pasapalabra</div>
+        <div><b>Ctrl+R</b> = reiniciar</div>
+        <div style="margin-top:6px;">Requiere Chrome o Edge + micrófono.</div>
+      </div>
     </div>
+  </div>
 
-    <!-- BOTONS DE JOC ACTIU -->
-    <div class="action-zone">
-        <div id="torn-actual-titol" style="font-weight: bold; font-size: 18px; margin-bottom: 10px; color: var(--secondary-blue);">Torn: Cap</div>
-        <div class="voice-status" id="voice-status">Micròfon inactiu. Requerix Chrome/Edge + permís.</div>
-        <div id="transcripcio" style="font-weight: bold; font-size: 16px; min-height: 24px; color: #555; margin-bottom: 15px;">Aquí apareixerà el que diguis…</div>
-        
-        <div class="game-actions">
-            <button class="btn-success" onclick="marcarCorrecta()">✔ OK (Enter)</button>
-            <button class="btn-danger" onclick="marcarFallada()">✘ Fallar (X)</button>
-            <button class="btn-warning" onclick="marcarPasapalabra()">⏭ Pasar (Espai)</button>
-            <button class="btn-main" onclick="mostrarSolucio()">💡 Solució</button>
-            <button class="btn-secondary" onclick="repetirPregunta()">🔊 Repetir</button>
-        </div>
+  <div class="panel answer-panel">
+    <div class="answer-row">
+      <div class="answer-box" id="answerBox"><span class="placeholder">Aquí aparecerá lo que digas…</span></div>
     </div>
-
-    <div class="help-keys">
-        <strong>Atalls de teclat:</strong> <code>Enter</code> = Correcta | <code>X</code> = Incorrecta | <code>Espai</code> = Pasapalabra | <code>Ctrl + R</code> = Reiniciar
+    <div class="verdict-row" style="margin-top:12px;">
+      <button id="btnCorrect" class="primary" disabled>✔ Correcta (Enter)</button>
+      <button id="btnWrong" class="danger" disabled>✘ Incorrecta (X)</button>
+      <button id="btnPass" class="ghost" disabled>⏭ Pasapalabra (Espacio)</button>
+      <button id="btnRepeat" class="ghost" disabled>🔊 Repetir pregunta</button>
     </div>
+  </div>
 
-    <!-- APARTAT DE MÒDULS SEPARATS PER INTRODUIR PREGUNTES -->
-    <div class="editor-section">
-        <h3>✏ Editar paraules dels Roscos (Mòduls Separats)</h3>
-        <p style="font-size: 14px; text-align: center; color: #555;">Una línia per lletra amb el format: <strong>LLETRA|PREGUNTA|RESPOSTA</strong></p>
-        
-        <div class="editors-container">
-            <!-- CAIXA JUGADOR 1 -->
-            <div class="editor-box">
-                <label for="txt-j1">Rosco JUGADOR 1</label>
-                <textarea id="txt-j1">A|Amb la A: Planta de flors grogues que gira buscant el sol|Girasol
-B|Amb la B: Objecte de plàstic o vidre que conté líquids|Botella
-C|Amb la C: Animal domèstic que miola i caça ratolins|Gat</textarea>
-            </div>
-
-            <!-- CAIXA JUGADOR 2 -->
-            <div class="editor-box">
-                <label for="txt-j2">Rosco JUGADOR 2</label>
-                <textarea id="txt-j2">A|Amb la A: Insecte volador de ratlles negres i grogues que fa mel|Abella
-B|Amb la B: Vehicle de dues rodes que es mou fent pedals|Bicicleta
-C|Amb la C: Estructura de maons on viuen les persones|Casa</textarea>
-            </div>
-        </div>
-
-        <div style="text-align: center;">
-            <button class="btn-secondary" onclick="restablirEditors()">Cancel·lar</button>
-            <button class="btn-success" onclick="guardarRoscos()">Guardar Canvis i Carregar</button>
-        </div>
-    </div>
+  <p class="hint">Formato de edición: LETRA|PREGUNTA|RESPUESTA, una línea por letra.</p>
 </div>
+
+<div class="modal-backdrop" id="editBackdrop">
+  <div class="modal">
+    <h2>Editar palabras del rosco</h2>
+    <div class="edit-help">Una línea por letra, formato: <b>LETRA|PREGUNTA|RESPUESTA</b>. Las líneas mal escritas se ignoran.</div>
+    <textarea id="wordsArea"></textarea>
+    <div class="edit-actions">
+      <button id="btnCancelEdit" class="ghost">Cancelar</button>
+      <button id="btnSaveEdit" class="primary">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <script>
-    // --- ESTAT DEL JOC ---
-    let roscoOriginalJ1 = [];
-    let roscoOriginalJ2 = [];
-    
-    let estatJ1 = { temps: 150, correctes: 0, fallades: 0, pasades: 0, restants: 0, indexActual: 0, paraules: [] };
-    let estatJ2 = { temps: 150, correctes: 0, fallades: 0, pasades: 0, restants: 0, indexActual: 0, paraules: [] };
-    
-    let jugadorActual = 1; 
-    let jocActiu = false;
-    let intervalTimer = null;
+// ---------- Datos por defecto ----------
+const DEFAULT_WORDS = [
+["A","Empieza por A: Estado de ánimo en el que no se siente nada de tristeza ni alegría","indiferencia"],
+["B","Empieza por B: Instrumento de cuerda que se toca con arco, más grande que el violín","violonchelo"],
+["C","Contiene la C: Fenómeno atmosférico eléctrico que va acompañado de trueno","rayo"],
+["D","Empieza por D: Juego de mesa que se juega con fichas negras y blancas sobre un tablero","damas"],
+["E","Empieza por E: Aparato que sirve para subir y bajar personas entre plantas de un edificio","ascensor"],
+["F","Contiene la F: Instrumento óptico que sirve para ver objetos lejanos","catalejo"],
+["G","Empieza por G: Ave de corral que en Navidad se suele comer asada","pavo"],
+["H","Empieza por H: Deporte que se practica sobre hielo con un disco y un stick","hockey"],
+["I","Contiene la I: Insecto que produce miel y vive en colmenas","abeja"],
+["J","Empieza por J: Planta con espinas típica del desierto","cactus"],
+["L","Empieza por L: Órgano del cuerpo humano encargado de filtrar la sangre","hígado"],
+["M","Empieza por M: Instrumento que se usa para medir la temperatura corporal","termómetro"],
+["N","Empieza por N: Planeta más alejado del Sol del sistema solar","neptuno"],
+["Ñ","Contiene la Ñ: Hermano del cuñado","concuñado"],
+["O","Contiene la O: Deporte en el que se intenta marcar goles con los pies","fútbol"],
+["P","Empieza por P: Personaje de videojuego que es amarillo y puede lanzar electricidad","pikachu"],
+["Q","Empieza por Q: Alimento lácteo que se utiliza mucho en pizzas","queso"],
+["R","Empieza por R: Animal pequeño que tiene una cola larga y suele vivir en las casas o en el campo","ratón"],
+["S","Empieza por S: Criatura fantástica que suele vivir en el mar y tiene forma de mujer con cola de pez","sirena"],
+["T","Empieza por T: Red social conocida por sus vídeos cortos y bailes","tiktok"],
+["U","Contiene la U: Animal fantástico parecido a un caballo que tiene un cuerno en la cabeza","unicornio"],
+["V","Contiene la V: Medio de transporte que puede volar y lleva pasajeros","avión"],
+["X","Empieza por X: Instrumento musical que se toca con dos baquetas","xilófono"],
+["Y","Contiene la Y: Personaje de juguete vaquero de una famosa película de animación","woody"],
+["Z","Empieza por Z: Animal que se parece a un perro y vive en manadas","zorro"],
+];
 
-    // --- SENSE FILS DE VEU (Web Speech API per a Chrome/Edge) ---
-    let recognition = null;
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SpeechRecognition();
-        recognition.lang = 'ca-ES'; 
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
+// ---------- Estado ----------
+let words = [];
+let idx = 0;
+let timeLeft = 150;
+let timerId = null;
+let running = false;
+let correctCount = 0, wrongCount = 0, passCount = 0;
+let recognition = null;
+let recognizing = false;
 
-        recognition.onstart = () => {
-            document.getElementById('voice-status').innerText = "🎙️ Escoltant... Digues la teva resposta.";
-        };
+const el = (id) => document.getElementById(id);
 
-        recognition.onerror = () => {
-            document.getElementById('voice-status').innerText = "⚠️ Error de micròfon o sense permís.";
-        };
+function normalize(s){
+  return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zñ0-9\s]/g,"").trim();
+}
+function similar(a,b){
+  a = normalize(a); b = normalize(b);
+  if(!a || !b) return false;
+  if(a === b) return true;
+  if(a.includes(b) || b.includes(a)) return true;
+  const d = levenshtein(a,b);
+  return d <= Math.max(1, Math.floor(b.length*0.25));
+}
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},()=>new Array(n+1).fill(0));
+  for(let i=0;i<=m;i++) dp[i][0]=i;
+  for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++)
+    for(let j=1;j<=n;j++)
+      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j-1],dp[i-1][j],dp[i][j-1]);
+  return dp[m][n];
+}
 
-        recognition.onend = () => {
-            if (jocActiu) {
-                document.getElementById('voice-status').innerText = "Micròfon en espera. Prem 'Repetir' si cal.";
-            } else {
-                document.getElementById('voice-status').innerText = "Micròfon inactiu.";
-            }
-        };
-
-        recognition.onresult = (event) => {
-            const textResultat = event.results[0][0].transcript;
-            document.getElementById('transcripcio').innerText = `Has dit: "${textResultat}"`;
-            processarVeuAutomatica(textResultat);
-        };
+function parseWords(text){
+  const out = [];
+  text.split("\n").forEach(line=>{
+    const parts = line.split("|");
+    if(parts.length>=3){
+      const letter = parts[0].trim().toUpperCase();
+      const clue = parts[1].trim();
+      const answer = parts.slice(2).join("|").trim();
+      if(letter && clue && answer) out.push({letter, clue, answer, status:"pending"});
     }
+  });
+  return out;
+}
+function wordsToText(list){ return list.map(w=>`${w.letter}|${w.clue}|${w.answer}`).join("\n"); }
+function loadDefault(){ words = DEFAULT_WORDS.map(([letter,clue,answer])=>({letter,clue,answer,status:"pending"})); }
+loadDefault();
 
-    // --- SÍNTESI DE VEU (L'ordinador llegeix) ---
-    function parlar(text) {
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel(); 
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'ca-ES';
-            window.speechSynthesis.speak(utterance);
-        }
-    }
+// ---------- Rosco visual ----------
+function layoutRosco(){
+  const holder = el('rosco');
+  holder.querySelectorAll('.letter').forEach(n=>n.remove());
+  const n = words.length;
+  const Rpct = 42; // % del contenedor
+  words.forEach((w,i)=>{
+    const angle = (i/n)*2*Math.PI - Math.PI/2;
+    const x = 50 + Rpct*Math.cos(angle);
+    const y = 50 + Rpct*Math.sin(angle);
+    const d = document.createElement('div');
+    d.className = 'letter';
+    d.id = 'L'+i;
+    d.textContent = w.letter;
+    d.style.left = x+'%';
+    d.style.top = y+'%';
+    holder.appendChild(d);
+  });
+}
 
-    // --- PARSEJAR EL TEXT DE LES DUES CAIXES SEPARADES ---
-    function guardarRoscos() {
-        const textJ1 = document.getElementById('txt-j1').value;
-        const textJ2 = document.getElementById('txt-j2').value;
+function refreshRosco(){
+  words.forEach((w,i)=>{
+    const d = el('L'+i);
+    if(!d) return;
+    d.className = 'letter ' + (i===idx && running ? 'current' : '') + ' ' + w.status;
+  });
+  const left = words.filter(w=>w.status==='pending').length;
+  el('stLeft').textContent = left;
+}
 
-        roscoOriginalJ1 = parsejarTextRosco(textJ1);
-        roscoOriginalJ2 = parsejarTextRosco(textJ2);
+function updateScore(){
+  el('stCorrect').textContent = correctCount;
+  el('stWrong').textContent = wrongCount;
+  el('stPass').textContent = passCount;
+}
 
-        alert(`Canvis guardats correctament!\nCarregades ${roscoOriginalJ1.length} lletres per al J1 i ${roscoOriginalJ2.length} per al J2.`);
-        reiniciarPartida();
-    }
+// ---------- Turnos ----------
+function nextPendingIndex(from){
+  const n = words.length;
+  for(let step=1; step<=n; step++){
+    const i = (from+step) % n;
+    if(words[i].status === 'pending') return i;
+  }
+  return -1;
+}
 
-    function parsejarTextRosco(text) {
-        const linies = text.split('\n');
-        const llista = [];
-        linies.forEach(linia => {
-            if (linia.trim() === '') return;
-            const parts = linia.split('|');
-            if (parts.length >= 3) {
-                llista.push({
-                    lletra: parts[0].trim().toUpperCase(),
-                    pregunta: parts[1].trim(),
-                    resposta: parts[2].trim(),
-                    estat: 'pendent' 
-                });
-            }
-        });
-        return llista;
-    }
+function startTurn(){
+  if(!running) return;
+  el('answerBox').className = 'answer-box';
+  el('answerBox').innerHTML = '<span class="placeholder">Escuchando… habla cuando oigas la pregunta</span>';
+  setVerdictButtons(false);
+  const w = words[idx];
+  el('roscoCenter').innerHTML = `
+    <div class="rc-letter">${w.letter}</div>
+    <div class="rc-clue">${escapeHtml(w.clue)}</div>
+    <div class="rc-status" id="rcStatus">Escuchando…</div>`;
+  refreshRosco();
+  speak(`${w.letter}. ${w.clue}`, () => { if(running) startListening(); });
+}
 
-    function restablirEditors() {
-        if(roscoOriginalJ1.length > 0) {
-            document.getElementById('txt-j1').value = roscoOriginalJ1.map(p => `${p.lletra}|${p.pregunta}|${p.resposta}`).join('\n');
-            document.getElementById('txt-j2').value = roscoOriginalJ2.map(p => `${p.lletra}|${p.pregunta}|${p.resposta}`).join('\n');
-        }
-    }
-    // --- MECÀNICA DELS TONS I BOTONS ---
-    function començarPartida() {
-        if (roscoOriginalJ1.length === 0 || roscoOriginalJ2.length === 0) {
-            guardarRoscos();
-        }
+function escapeHtml(s){ return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-        if (jocActiu) return;
-        jocActiu = true;
-        
-        document.getElementById('btn-empezar').disabled = true;
-        intervalTimer = setInterval(actualitzarTemporitzador, 1000);
-        
-        actualitzarInterficie();
-        llegirPreguntaActual();
-    }
+function speak(text, onEnd){
+  if(!('speechSynthesis' in window)){ if(onEnd) onEnd(); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'es-ES'; u.rate = 1;
+  u.onend = () => { if(onEnd) onEnd(); };
+  window.speechSynthesis.speak(u);
+}
 
-    function pausarPartida() {
-        jocActiu = false;
-        clearInterval(intervalTimer);
-        document.getElementById('btn-empezar').disabled = false;
-        if (recognition) recognition.stop();
-        document.getElementById('voice-status').innerText = "Joc en pausa.";
-    }
+// ---------- Reconocimiento de voz ----------
+function setupRecognition(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){
+    el('micStatus').textContent = 'Este navegador no soporta reconocimiento de voz (usa Chrome o Edge).';
+    return null;
+  }
+  const r = new SR();
+  r.lang = 'es-ES'; r.continuous = false; r.interimResults = true;
+  r.onstart = () => {
+    recognizing = true;
+    el('micDot').classList.add('listening');
+    el('micStatus').textContent = 'Escuchando tu respuesta…';
+  };
+  r.onresult = (e) => {
+    let transcript = '';
+    for(let i=e.resultIndex; i<e.results.length; i++) transcript += e.results[i][0].transcript;
+    handleTranscript(transcript, e.results[e.results.length-1].isFinal);
+  };
+  r.onerror = () => { el('micStatus').textContent = 'No se ha entendido bien, pulsa 🔊 para repetir o responde manualmente.'; };
+  r.onend = () => {
+    recognizing = false;
+    el('micDot').classList.remove('listening');
+    if(running) el('micStatus').textContent = 'Micrófono en pausa · pulsa Repetir si no te ha oído';
+  };
+  return r;
+}
+function startListening(){
+  if(!recognition) recognition = setupRecognition();
+  if(!recognition) return;
+  try{ recognition.start(); }catch(e){}
+}
+function handleTranscript(transcript, isFinal){
+  const clean = transcript.trim();
+  if(!clean) return;
+  if(normalize(clean).includes('pasapalabra')){ if(isFinal) doPass(); return; }
+  const w = words[idx];
+  const isMatch = similar(clean, w.answer);
+  el('answerBox').textContent = clean;
+  el('answerBox').className = 'answer-box ' + (isMatch ? 'correct' : 'wrong');
+  setVerdictButtons(true);
+  const rc = el('rcStatus');
+  if(rc) rc.textContent = isMatch ? 'Suena correcta ✔' : 'No coincide con la respuesta';
+  el('micStatus').textContent = isMatch
+    ? 'Suena correcta · pulsa Correcta o Enter para confirmar'
+    : 'No coincide · confirma manualmente si crees que es un error de dictado';
+}
 
-    function reiniciarPartida() {
-        jocActiu = false;
-        clearInterval(intervalTimer);
-        document.getElementById('btn-empezar').disabled = false;
-        if (recognition) recognition.stop();
+function setVerdictButtons(enabled){
+  el('btnCorrect').disabled = !enabled;
+  el('btnWrong').disabled = !enabled;
+  el('btnPass').disabled = !running;
+  el('btnRepeat').disabled = !running;
+}
 
-        estatJ1 = { temps: 150, correctes: 0, fallades: 0, pasades: 0, restants: roscoOriginalJ1.length, indexActual: 0, paraules: JSON.parse(JSON.stringify(roscoOriginalJ1)) };
-        estatJ2 = { temps: 150, correctes: 0, fallades: 0, pasades: 0, restants: roscoOriginalJ2.length, indexActual: 0, paraules: JSON.parse(JSON.stringify(roscoOriginalJ2)) };
-        
-        jugadorActual = 1;
-        
-        document.getElementById('transcripcio').innerText = "Aquí apareixerà el que diguis…";
-        document.getElementById('torn-actual-titol').innerText = "Torn: Cap";
-        document.getElementById('voice-status').innerText = "Micròfon inactiu.";
-        
-        document.getElementById('badge-j1').innerText = "-";
-        document.getElementById('pregunta-j1').innerText = "Pulsa 'Empeçar' per començar.";
-        document.getElementById('badge-j2').innerText = "-";
-        document.getElementById('pregunta-j2').innerText = "Esperant inici...";
-        
-        actualitzarInterficie();
-    }
+// ---------- Acciones de turno ----------
+function doCorrect(){ if(!running) return; words[idx].status='correct'; correctCount++; advance(); }
+function doWrong(){ if(!running) return; words[idx].status='wrong'; wrongCount++; advance(); }
+function doPass(){ if(!running) return; if(words[idx].status==='pending'){ words[idx].status='passed'; passCount++; } advance(); }
 
-    function actualitzarTemporitzador() {
-        if (!jocActiu) return;
+function advance(){
+  updateScore();
+  refreshRosco();
+  if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
+  const next = nextPendingIndex(idx);
+  if(next === -1){ finishGame(); return; }
+  idx = next;
+  setTimeout(startTurn, 500);
+}
 
-        let estat = (jugadorActual === 1) ? estatJ1 : estatJ2;
-        
-        if (estat.temps > 0) {
-            estat.temps--;
-            document.getElementById('timer-j1').innerText = segonsAFormat(estatJ1.temps);
-            document.getElementById('timer-j2').innerText = segonsAFormat(estatJ2.temps);
-        } else {
-            marcarPasapalabra(); 
-        }
+function finishGame(){
+  running = false;
+  clearInterval(timerId);
+  el('roscoCenter').innerHTML = `<div class="rc-idle">Rosco terminado<br><span style="color:var(--gold)">${correctCount}</span> aciertos</div>`;
+  el('micStatus').textContent = 'Micrófono inactivo';
+  setVerdictButtons(false);
+  toggleTopButtons(false);
+  speak(`Rosco terminado. ${correctCount} aciertos.`);
+}
 
-        if (estatJ1.temps <= 0 && estatJ2.temps <= 0) {
-            finalitzarJoc("Fi del joc: S'ha esgotat el temps dels dos jugadors!");
-        }
-    }
+// ---------- Temporizador ----------
+function formatTime(s){ const m=Math.floor(s/60), sec=s%60; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
+function tick(){ timeLeft--; el('timer').textContent = formatTime(Math.max(timeLeft,0)); if(timeLeft<=0) finishGame(); }
 
-    function segonsAFormat(segons) {
-        const min = Math.floor(segons / 60);
-        const sec = segons % 60;
-        return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-    }
+// ---------- Botones principales ----------
+function toggleTopButtons(isRunning){
+  el('btnStart').disabled = isRunning;
+  el('btnPause').disabled = !isRunning;
+  el('btnEdit').disabled = isRunning;
+  el('secondsSelect').disabled = isRunning;
+}
 
-    function actualitzarInterficie() {
-        document.getElementById('correctes-j1').innerText = estatJ1.correctes;
-        document.getElementById('fallades-j1').innerText = estatJ1.fallades;
-        document.getElementById('pasades-j1').innerText = estatJ1.pasades;
-        document.getElementById('restants-j1').innerText = estatJ1.restants;
+el('btnStart').addEventListener('click', () => {
+  words.forEach(w=>w.status='pending');
+  correctCount=wrongCount=passCount=0;
+  updateScore();
+  idx = 0;
+  timeLeft = parseInt(el('secondsSelect').value,10);
+  el('timer').textContent = formatTime(timeLeft);
+  running = true;
+  toggleTopButtons(true);
+  clearInterval(timerId);
+  timerId = setInterval(tick, 1000);
+  startTurn();
+});
 
-        document.getElementById('correctes-j2').innerText = estatJ2.correctes;
-        document.getElementById('fallades-j2').innerText = estatJ2.fallades;
-        document.getElementById('pasades-j2').innerText = estatJ2.pasades;
-        document.getElementById('restants-j2').innerText = estatJ2.restants;
+el('btnPause').addEventListener('click', () => {
+  if(running){
+    running = false; clearInterval(timerId); window.speechSynthesis.cancel();
+    if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
+    el('btnPause').textContent = '▶ Reanudar';
+    el('micStatus').textContent = 'En pausa';
+  } else {
+    running = true; timerId = setInterval(tick, 1000);
+    el('btnPause').textContent = '⏸ Pausa';
+    startTurn();
+  }
+});
 
-        if (jocActiu) {
-            document.getElementById('torn-actual-titol').innerText = `Torn actiu: JUGADOR ${jugadorActual}`;
-            document.getElementById('panel-j1').classList.toggle('active', jugadorActual === 1);
-            document.getElementById('panel-j2').classList.toggle('active', jugadorActual === 2);
-        } else {
-            document.getElementById('panel-j1').classList.remove('active');
-            document.getElementById('panel-j2').classList.remove('active');
-        }
-    }
+el('btnRestart').addEventListener('click', () => {
+  running = false; clearInterval(timerId); window.speechSynthesis.cancel();
+  if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
+  words.forEach(w=>w.status='pending');
+  correctCount=wrongCount=passCount=0; idx = 0;
+  updateScore(); refreshRosco();
+  el('timer').textContent = formatTime(parseInt(el('secondsSelect').value,10));
+  el('roscoCenter').innerHTML = '<div class="rc-idle">Pulsa <b>Empezar</b><br>para jugar</div>';
+  el('answerBox').innerHTML = '<span class="placeholder">Aquí aparecerá lo que digas…</span>';
+  el('micStatus').textContent = 'Micrófono inactivo';
+  toggleTopButtons(false);
+  el('btnPause').textContent = '⏸ Pausa';
+  setVerdictButtons(false);
+});
 
-    function llegirPreguntaActual() {
-        if (!jocActiu) return;
+el('btnCorrect').addEventListener('click', doCorrect);
+el('btnWrong').addEventListener('click', doWrong);
+el('btnPass').addEventListener('click', doPass);
+el('btnRepeat').addEventListener('click', () => {
+  if(!running) return;
+  const w = words[idx];
+  if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
+  speak(`${w.letter}. ${w.clue}`, () => { if(running) startListening(); });
+});
 
-        let estat = (jugadorActual === 1) ? estatJ1 : estatJ2;
-        let prefix = (jugadorActual === 1) ? '-j1' : '-j2';
-        let inicial = estat.indexActual;
-        let trobada = false;
+// ---------- Edición de palabras ----------
+el('btnEdit').addEventListener('click', () => {
+  el('wordsArea').value = wordsToText(words);
+  el('editBackdrop').classList.add('open');
+});
+el('btnCancelEdit').addEventListener('click', () => el('editBackdrop').classList.remove('open'));
+el('btnSaveEdit').addEventListener('click', () => {
+  const parsed = parseWords(el('wordsArea').value);
+  if(parsed.length >= 3){
+    words = parsed; idx = 0;
+    layoutRosco(); refreshRosco();
+  }
+  el('editBackdrop').classList.remove('open');
+});
 
-        do {
-            let p = estat.paraules[estat.indexActual];
-            if (p && (p.estat === 'pendent' || p.estat === 'pasapalabra')) {
-                trobada = true;
-                break;
-            }
-            estat.indexActual = (estat.indexActual + 1) % estat.paraules.length;
-        } while (estat.indexActual !== inicial);
+// ---------- Atajos de teclado ----------
+document.addEventListener('keydown', (e) => {
+  if(el('editBackdrop').classList.contains('open')) return;
+  if(e.key === 'Enter' && !el('btnCorrect').disabled) doCorrect();
+  else if((e.key === 'x' || e.key === 'X') && !el('btnWrong').disabled) doWrong();
+  else if(e.key === ' ' && running){ e.preventDefault(); doPass(); }
+  else if(e.ctrlKey && (e.key === 'r' || e.key === 'R')){ e.preventDefault(); el('btnRestart').click(); }
+});
 
-        if (trobada) {
-            let item = estat.paraules[estat.indexActual];
-            document.getElementById(`badge${prefix}`).innerText = item.lletra;
-            document.getElementById(`pregunta${prefix}`).innerText = item.pregunta;
-            
-            parlar(item.pregunta);
-
-            if (recognition) {
-                try { recognition.start(); } catch(e) {}
-            }
-        } else {
-            estat.restants = 0;
-            actualitzarInterficie();
-            
-            let contrari = (jugadorActual === 1) ? estatJ2 : estatJ1;
-            let hiHaParaulesContrari = contrari.paraules.some(p => p.estat === 'pendent' || p.estat === 'pasapalabra');
-            
-            if (hiHaParaulesContrari && contrari.temps > 0) {
-                jugadorActual = (jugadorActual === 1) ? 2 : 1;
-                actualitzarInterficie();
-                llegirPreguntaActual();
-            } else {
-                finalitzarJoc("Fi de la partida! El rosco s'ha completat.");
-            }
-        }
-    }
-
-    function marcarCorrecta() {
-        if (!jocActiu) return;
-        let estat = (jugadorActual === 1) ? estatJ1 : estatJ2;
-        let item = estat.paraules[estat.indexActual];
-        
-        if (item) {
-            item.estat = 'correcte';
-            estat.correctes++;
-            estat.restants = estat.paraules.filter(p => p.estat === 'pendent' || p.estat === 'pasapalabra').length;
-            document.getElementById('transcripcio').innerText = `¡Correcte! Resposta: ${item.resposta}`;
-            parlar("Correcte");
-            
-            estat.indexActual = (estat.indexActual + 1) % estat.paraules.length;
-            actualitzarInterficie();
-            setTimeout(llegirPreguntaActual, 1000);
-        }
-    }
-
-    function marcarFallada() {
-        if (!jocActiu) return;
-        let estat = (jugadorActual === 1) ? estatJ1 : estatJ2;
-        let item = estat.paraules[estat.indexActual];
-        
-        if (item) {
-            item.estat = 'fallat';
-            estat.fallades++;
-            estat.restants = estat.paraules.filter(p => p.estat === 'pendent' || p.estat === 'pasapalabra').length;
-            document.getElementById('transcripcio').innerText = `Fallada. Era: ${item.resposta}`;
-            parlar("Incorrecte");
-
-            estat.indexActual = (estat.indexActual + 1) % estat.paraules.length;
-            canviarDeTorn();
-        }
-    }
-
-    function marcarPasapalabra() {
-        if (!jocActiu) return;
-        let estat = (jugadorActual === 1) ? estatJ1 : estatJ2;
-        let item = estat.paraules[estat.indexActual];
-        
-        if (item) {
-            item.estat = 'pasapalabra';
-            estat.pasades =   estat.paraules.filter(p => p.estat === 'pasapalabra').length;
-            document.getElementById('transcripcio').innerText = "Pasapalabra!";
-            parlar("Pasapalabra");
-
-            estat.indexActual = (estat.indexActual + 1) % estat.paraules.length;
-            canviarDeTorn();
-        }
-    }
-
-    function mostrarSolucio() {
-        if (!jocActiu) return;
-        let estat = (jugadorActual === 1) ? estatJ1 : estatJ2;
-        let item = estat.paraules[estat.indexActual];
-        if (item) {
-            document.getElementById('transcripcio').innerText = `💡 Solució: "${item.resposta}"`;
-            parlar(`La solució és ${item.resposta}`);
-        }
-    }
-
-    function repetirPregunta() {
-        if (!jocActiu) return;
-        let estat = (jugadorActual === 1) ? estatJ1 : estatJ2;
-        let item = estat.paraules[estat.indexActual];
-        if (item) parlar(item.pregunta);
-    }
-
-    function canviarDeTorn() {
-        if (recognition) recognition.stop();
-        
-        let següentJugador = (jugadorActual === 1) ? 2 : 1;
-        let estatSegüent = (següentJugador === 1) ? estatJ1 : estatJ2;
-        let téParaules = estatSegüent.paraules.some(p => p.estat === 'pendent' || p.estat === 'pasapalabra');
-        
-        if (téParaules && estatSegüent.temps > 0) {
-            jugadorActual = següentJugador;
-        } else {
-            let estatActual = (jugadorActual === 1) ? estatJ1 : estatJ2;
-            let actualTéParaules = estatActual.paraules.some(p => p.estat === 'pendent' || p.estat === 'pasapalabra');
-            if (!actualTéParaules || estatActual.temps <= 0) {
-                finalitzarJoc("Fi del joc: Sense moviments possibles.");
-                return;
-            }
-        }
-        
-        actualitzarInterficie();
-        setTimeout(llegirPreguntaActual, 1200);
-    }
-
-    function processarVeuAutomatica(text) {
-        if (!jocActiu) return;
-        let estat = (jugadorActual === 1) ? estatJ1 : estatJ2;
-        let item = estat.paraules[estat.indexActual];
-        if (!item) return;
-
-        const netejar = (t) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-        let textUsuari = netejar(text);
-        let respostaCorrecta = netejar(item.resposta);
-
-        if (textUsuari.includes("pasapalabra") || textUsuari.includes("pasa paraula") || textUsuari.includes("pasa")) {
-            marcarPasapalabra();
-        } else if (textUsuari === respostaCorrecta) {
-            marcarCorrecta();
-        } else {
-            document.getElementById('transcripcio').innerText = `Entès: "${text}". Valida manualment si cal.`;
-        }
-    }
-function finalitzarJoc(missatge) {
-        jocActiu = false;
-        clearInterval(intervalTimer);
-        if (recognition) recognition.stop();
-        document.getElementById('torn-actual-titol').innerText = "PARTIDA FINALITZADA";
-        
-        let guanyador = (estatJ1.correctes > estatJ2.correctes) ? "\nGuanyador: JUGADOR 1 🎉" : 
-                        (estatJ2.correctes > estatJ1.correctes) ? "\nGuanyador: JUGADOR 2 🎉" : "\nEmpat! 🤝";
-
-        alert(missatge + guanyador);
-        parlar("Partida finalitzada.");
-    }
-
-    // --- ATALLS DE TECLAT ---
-    window.addEventListener('keydown', (e) => {
-        if (e.ctrlKey && e.key.toLowerCase() === 'r') {
-            e.preventDefault();
-            reiniciarPartida();
-            return;
-        }
-        if (!jocActiu) return;
-
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            marcarCorrecta();
-        } else if (e.key.toLowerCase() === 'x') {
-            e.preventDefault();
-            marcarFallada();
-        } else if (e.key === ' ') { 
-            e.preventDefault();
-            marcarPasapalabra();
-        }
-    });
-
-    window.onload = () => { guardarRoscos(); };
+// ---------- Init ----------
+layoutRosco();
+refreshRosco();
+updateScore();
+el('timer').textContent = formatTime(parseInt(el('secondsSelect').value,10));
 </script>
 </body>
 </html>
