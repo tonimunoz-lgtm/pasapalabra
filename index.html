@@ -226,6 +226,9 @@
     <label style="display:flex; align-items:center; gap:6px; font-size:.82rem; color:var(--muted);">
       <input type="checkbox" id="chkVirtualBg" checked> Fondo virtual
     </label>
+    <label style="display:flex; align-items:center; gap:6px; font-size:.82rem; color:var(--muted);">
+      <input type="checkbox" id="chkCameraOnlyMic" checked> Solo escuchar por el móvil-cámara
+    </label>
   </div>
 
   <div class="panel statusbar">
@@ -540,6 +543,10 @@ function startListening(){
     el('micDot').classList.add('listening');
     el('micStatus').textContent = 'Escuchando desde el móvil-cámara…';
     cameraConn.send({type:'listen'});
+    return;
+  }
+  if(el('chkCameraOnlyMic').checked){
+    el('micStatus').textContent = '⚠️ Sin móvil-cámara conectado. Conéctalo para poder escuchar, o desmarca "Solo escuchar por el móvil-cámara".';
     return;
   }
   if(!recognition) recognition = setupRecognition();
