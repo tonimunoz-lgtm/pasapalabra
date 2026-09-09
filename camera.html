@@ -62,20 +62,18 @@
   <div id="camScreen">
     <div class="panel">
       <div id="camStatus">Enviando imagen a la pantalla principal…</div>
-      <div id="micStatusLine" style="font-size:.85rem; color:var(--muted); margin-bottom:10px;">🎤 Micrófono listo</div>
       <video id="localPreview" autoplay playsinline muted></video>
       <div class="row">
         <button id="btnFlip">🔄 Cambiar cámara</button>
         <button id="btnStop" class="danger">⏹ Detener</button>
       </div>
-      <p class="tip">Deja el móvil enchufado o con batería suficiente: la pantalla se mantiene encendida mientras grabas. Si cierras esta pestaña o el móvil se bloquea, se corta el envío. Este móvil es también el micrófono de la partida: mantenlo cerca del jugador.</p>
+      <p class="tip">Deja el móvil enchufado o con batería suficiente: la pantalla se mantiene encendida mientras grabas. Si cierras esta pestaña o el móvil se bloquea, se corta el envío.</p>
     </div>
   </div>
 
 <script>
 const el = (id) => document.getElementById(id);
-let peer = null, call = null, dataConn = null, stream = null, hostId = null, facing = 'environment', wakeLock = null;
-let camRecognition = null;
+let peer = null, call = null, stream = null, hostId = null, facing = 'environment', wakeLock = null;
 
 const ICE_CONFIG = {
   iceServers: [
@@ -123,32 +121,12 @@ el('btnConnect').addEventListener('click', async () => {
   peer = new Peer(undefined, { config: ICE_CONFIG });
   peer.on('open', () => {
     hostId = 'rosco-'+code;
-
-    dataConn = peer.connect(hostId, { reliable: true });
-
-    dataConn.on('open', () => {
-      clearTimeout(openTimeout);
-      dataConn.send({ type: 'hello', role: 'camera' });
-      el('pairScreen').style.display = 'none';
-      el('camScreen').style.display = 'block';
-      requestWakeLock();
-      startCamListening();
-
-      // El canal de datos ya está abierto; ahora sí lanzamos la llamada de vídeo
-      call = peer.call(hostId, stream);
-      call.on('stream', () => {}); // no necesitamos vídeo de vuelta
-      call.on('error', () => { el('camStatus').textContent = '⚠️ Error enviando el vídeo.'; });
-    });
-    dataConn.on('data', (msg) => {
-      if(!msg || !msg.type) return;
-      if(msg.type === 'listen') startCamListening();
-      else if(msg.type === 'stopListen') stopCamListening();
-    });
-    dataConn.on('error', () => {
-      clearTimeout(openTimeout);
-      el('connStatus').textContent = 'No se pudo abrir el canal con la pantalla principal. Revisa el código y vuelve a intentarlo.';
-      el('btnConnect').disabled = false;
-    });
+    call = peer.call(hostId, stream);
+    call.on('stream', () => {}); // no necesitamos vídeo de vuelta
+    clearTimeout(openTimeout);
+    el('pairScreen').style.display = 'none';
+    el('camScreen').style.display = 'block';
+    requestWakeLock();
   });
   peer.on('error', (e) => {
     clearTimeout(openTimeout);
@@ -156,42 +134,6 @@ el('btnConnect').addEventListener('click', async () => {
     el('btnConnect').disabled = false;
   });
 });
-
-// ---------- Reconocimiento de voz (micrófono de este móvil) ----------
-let shouldListen = false;
-
-function setupCamRecognition(){
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ el('micStatusLine').textContent = '⚠️ Este navegador no soporta reconocimiento de voz.'; return null; }
-  const r = new SR();
-  r.lang = 'es-ES'; r.continuous = true; r.interimResults = true;
-  r.onstart = () => { el('micStatusLine').textContent = '🎙 Escuchando (continuo)…'; dataConn?.send({type:'listening'}); };
-  r.onresult = (e) => {
-    let t = '';
-    for(let i=e.resultIndex; i<e.results.length; i++) t += e.results[i][0].transcript;
-    el('micStatusLine').textContent = '🎙 "' + t + '"';
-    dataConn?.send({ type:'transcript', text: t, isFinal: e.results[e.results.length-1].isFinal });
-  };
-  r.onerror = () => { dataConn?.send({type:'error'}); };
-  r.onend = () => {
-    el('micStatusLine').textContent = '🎤 Micrófono listo';
-    dataConn?.send({type:'listeningEnded'});
-    // El reconocimiento continuo a veces se corta solo (silencio largo, error de red);
-    // si seguimos en juego, lo reactivamos automáticamente sin que nadie lo note.
-    if(shouldListen){ setTimeout(() => { try{ camRecognition.start(); }catch(e){} }, 300); }
-  };
-  return r;
-}
-function startCamListening(){
-  shouldListen = true;
-  if(!camRecognition) camRecognition = setupCamRecognition();
-  if(!camRecognition) return;
-  try{ camRecognition.start(); }catch(e){ /* ya estaba escuchando, no pasa nada */ }
-}
-function stopCamListening(){
-  shouldListen = false;
-  try{ camRecognition && camRecognition.stop(); }catch(e){}
-}
 
 el('btnFlip').addEventListener('click', async () => {
   facing = facing === 'environment' ? 'user' : 'environment';
@@ -208,8 +150,6 @@ el('btnFlip').addEventListener('click', async () => {
 el('btnStop').addEventListener('click', () => {
   if(stream) stream.getTracks().forEach(t=>t.stop());
   if(call) call.close();
-  if(dataConn) dataConn.close();
-  stopCamListening();
   if(peer) peer.destroy();
   wakeLock?.release?.();
   location.reload();
