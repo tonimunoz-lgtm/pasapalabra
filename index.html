@@ -60,7 +60,7 @@
   /* ---- Stage (1 player) ---- */
   .stage{ display:grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
   @media (max-width: 980px){ .stage{ grid-template-columns: 1fr; } }
-  .rosco-panel{ display:flex; justify-content:center; padding: 32px; }
+  .rosco-panel{ display:flex; justify-content:center; align-items:center; padding: 32px; }
   .rosco-holder{ position:relative; width: min(78vh, 78vw, 760px); aspect-ratio: 1 / 1; }
   .rosco-holder.small{ width: min(50vh, 42vw, 480px); padding: 18px; }
 
@@ -138,7 +138,27 @@
   body.fullscreen-active .turn-banner,
   body.fullscreen-active .answer-panel,
   body.fullscreen-active .hint{ display:none !important; }
-  body.fullscreen-active{ padding: 14px; }
+  body.fullscreen-active{ padding: 10px; }
+  body.fullscreen-active .wrap{ max-width: 100%; }
+
+  /* Modo 1 jugador a pantalla completa: el rosco ocupa casi toda la ventana,
+     el marcador pasa a ser una franja flotante inferior compacta */
+  body.fullscreen-active .stage{ grid-template-columns: 1fr; }
+  body.fullscreen-active .stage .rosco-panel{ padding: 0; min-height: 94vh; }
+  body.fullscreen-active .stage .rosco-holder{ width: min(94vh, 96vw, 1500px) !important; }
+  body.fullscreen-active .stage .stats-panel{
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    width: auto; background: rgba(20,29,51,.92); border-radius: 14px; padding: 10px 20px; z-index: 40;
+  }
+  body.fullscreen-active .stage .stats-panel .stat-grid{ grid-template-columns: repeat(4, auto); gap: 20px; }
+  body.fullscreen-active .stage .stats-panel .stat{ padding: 4px 6px; background: transparent; border: none; }
+  body.fullscreen-active .stage .stats-panel .n{ font-size: 1.15rem; }
+  body.fullscreen-active .stage .stats-panel .l{ font-size: .62rem; }
+
+  /* Modo 2 jugadores a pantalla completa: cada rosco crece todo lo posible */
+  body.fullscreen-active .stage2p .rosco-panel{ padding: 10px; }
+  body.fullscreen-active .stage2p .rosco-holder.small{ width: min(82vh, 46vw, 900px) !important; }
+  body.fullscreen-active .stage2p .player-label{ font-size: 1.1rem; }
 </style>
 </head>
 <body>
@@ -335,7 +355,7 @@ function renderStage(){
       <div class="panel rosco-panel"><div class="rosco-holder" id="rosco-0">
         <div class="rosco-center" id="roscoCenter-0"><div class="rc-idle">Pulsa <b>Empezar</b><br>para jugar</div></div>
       </div></div>
-      <div class="panel"><div class="stat-grid" id="stats-0">
+      <div class="panel stats-panel"><div class="stat-grid" id="stats-0">
         <div class="stat green"><div class="n" id="stCorrect-0">0</div><div class="l">ACIERTOS</div></div>
         <div class="stat red"><div class="n" id="stWrong-0">0</div><div class="l">FALLOS</div></div>
         <div class="stat gold"><div class="n" id="stPass-0">0</div><div class="l">PASADAS</div></div>
@@ -350,7 +370,7 @@ function renderStage(){
         <div class="panel rosco-panel"><div class="rosco-holder small" id="rosco-${i}">
           <div class="rosco-center" id="roscoCenter-${i}"><div class="rc-idle">Esperando<br>inicio</div></div>
         </div></div>
-        <div class="panel"><div class="stat-grid" id="stats-${i}">
+        <div class="panel stats-panel"><div class="stat-grid" id="stats-${i}">
           <div class="stat green"><div class="n" id="stCorrect-${i}">0</div><div class="l">ACIERTOS</div></div>
           <div class="stat red"><div class="n" id="stWrong-${i}">0</div><div class="l">FALLOS</div></div>
           <div class="stat gold"><div class="n" id="stPass-${i}">0</div><div class="l">PASADAS</div></div>
