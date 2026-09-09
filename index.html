@@ -151,8 +151,7 @@
   }
   body.fullscreen-active.video-active #fsBgToggle{ display:block; }
 
-  #tvCanvas{ position:fixed; inset:0; width:100%; height:100%; z-index:5; display:none; background:#000; }
-  body.fullscreen-active.video-active #tvCanvas{ display:block; }
+  .tv-canvas{ position:fixed; z-index:5; display:none; background:#000; }
   body.fullscreen-active.video-active .rosco-panel{ background:transparent !important; border:none !important; backdrop-filter:none !important; }
   body.fullscreen-active.video-active .rosco-center{ display:none !important; }
   body.fullscreen-active.video-active .stage .stats-panel{ left: 24px; right:auto; transform:none; bottom: 24px; }
@@ -271,8 +270,6 @@
     <input type="checkbox" id="chkVirtualBgFs" checked> Fondo virtual
   </label>
 </div>
-<video id="rawVideo" autoplay playsinline muted style="display:none;"></video>
-<canvas id="tvCanvas"></canvas>
 
 <div class="modal-backdrop" id="editBackdrop">
   <div class="modal">
@@ -290,7 +287,7 @@
 <div class="modal-backdrop" id="linkBackdrop">
   <div class="modal">
     <h2>Vincular móvil</h2>
-    <div class="edit-help">Abre <b>controls.html</b> en el móvil del presentador (para los controles) y/o <b>camera.html</b> en el móvil del trípode (para grabar al jugador). Ambos usan este mismo código, cada uno conecta por separado. Los dos dispositivos necesitan conexión a internet.</div>
+    <div class="edit-help">Abre <b>controls.html</b> en el móvil del presentador (para los controles) y/o <b>camera.html</b> en el móvil del trípode (para grabar al jugador). Ambos usan este mismo código, cada uno conecta por separado. En partidas de 2 jugadores, cada móvil-cámara elige a quién graba (Jugador 1 o Jugador 2) antes de conectar. Los dispositivos necesitan conexión a internet.</div>
     <div class="paircode" id="pairCodeDisplay">----</div>
     <div class="mic-status" id="pairStatus" style="text-align:center;">Generando código…</div>
     <div class="edit-actions"><button id="btnCloseLink" class="ghost">Cerrar</button></div>
@@ -831,29 +828,55 @@ function openLinkModal(){
   });
   peer.on('error', (err) => { el('pairStatus').textContent = 'Error: ' + err.type + ' (revisa la conexión a internet)'; });
   peer.on('call', (call) => {
+    const wantsPlayer2 = call.metadata && call.metadata.player === 2;
+    const slotIndex = (gameMode === 2 && wantsPlayer2) ? 1 : 0;
     call.answer();
-    call.on('stream', (remoteStream) => {
-      el('rawVideo').srcObject = remoteStream;
-      document.body.classList.add('video-active');
-      el('videoIndicator').textContent = '🎥 Cámara conectada';
-      startVideoRenderLoop();
-    });
-    call.on('close', () => {
-      document.body.classList.remove('video-active');
-      el('videoIndicator').textContent = '';
-      stopVideoRenderLoop();
-    });
+    call.on('stream', (remoteStream) => { attachVideoSlot(slotIndex, remoteStream); });
+    call.on('close', () => { detachVideoSlot(slotIndex); });
   });
 }
 
-// ---------- Vídeo con fondo virtual ----------
-let segModel = null, renderLoopActive = false, segBusy = false, lastSegMask = null;
+// ---------- Vídeo con fondo virtual (uno o dos jugadores) ----------
+const videoSlots = {}; // { 0: {raw, canvas, segModel, lastSegMask, segBusy}, 1: {...} }
+let globalRenderLoopActive = false;
 
-function ensureSegModel(){
-  if(segModel || typeof SelfieSegmentation === 'undefined') return;
-  segModel = new SelfieSegmentation({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${f}` });
-  segModel.setOptions({ modelSelection: 0 });
-  segModel.onResults((results) => { lastSegMask = results; segBusy = false; });
+function getOrCreateSlot(i){
+  if(videoSlots[i]) return videoSlots[i];
+  const raw = document.createElement('video');
+  raw.autoplay = true; raw.playsInline = true; raw.muted = true;
+  raw.style.display = 'none';
+  document.body.appendChild(raw);
+
+  const canvas = document.createElement('canvas');
+  canvas.className = 'tv-canvas';
+  document.body.appendChild(canvas);
+
+  const slot = { raw, canvas, segModel: null, lastSegMask: null, segBusy: false, active: false };
+  if(typeof SelfieSegmentation !== 'undefined'){
+    slot.segModel = new SelfieSegmentation({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${f}` });
+    slot.segModel.setOptions({ modelSelection: 0 });
+    slot.segModel.onResults((results) => { slot.lastSegMask = results; slot.segBusy = false; });
+  }
+  videoSlots[i] = slot;
+  return slot;
+}
+
+function attachVideoSlot(i, stream){
+  const slot = getOrCreateSlot(i);
+  slot.raw.srcObject = stream;
+  slot.active = true;
+  document.body.classList.add('video-active');
+  el('videoIndicator').textContent = Object.values(videoSlots).some(s=>s.active) ? '🎥 Cámara conectada' : '';
+  startGlobalRenderLoop();
+}
+function detachVideoSlot(i){
+  const slot = videoSlots[i];
+  if(!slot) return;
+  slot.active = false;
+  slot.canvas.style.display = 'none';
+  const anyActive = Object.values(videoSlots).some(s=>s.active);
+  if(!anyActive) document.body.classList.remove('video-active');
+  el('videoIndicator').textContent = anyActive ? '🎥 Cámara conectada' : '';
 }
 
 function coverRect(srcW, srcH, dstW, dstH){
@@ -888,49 +911,70 @@ function drawFancyBackground(ctx, w, h){
   });
 }
 
-function startVideoRenderLoop(){
-  if(renderLoopActive) return;
-  renderLoopActive = true;
-  ensureSegModel();
-  const canvas = el('tvCanvas');
-  const ctx = canvas.getContext('2d');
-  const raw = el('rawVideo');
+function slotTargetRect(i){
+  // Modo 1 jugador: el vídeo cubre toda la pantalla, exactamente como antes.
+  if(gameMode !== 2){
+    return { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+  }
+  // Modo 2 jugadores: cada vídeo se ajusta al hueco de su propio rosco.
+  const holder = el('rosco-'+i);
+  const panel = holder ? holder.closest('.rosco-panel') : null;
+  if(!panel) return null;
+  const r = panel.getBoundingClientRect();
+  return { left: r.left, top: r.top, width: r.width, height: r.height };
+}
+
+function startGlobalRenderLoop(){
+  if(globalRenderLoopActive) return;
+  globalRenderLoopActive = true;
 
   function frame(){
-    if(!renderLoopActive) return;
-    const w = window.innerWidth, h = window.innerHeight;
-    if(canvas.width !== w) canvas.width = w;
-    if(canvas.height !== h) canvas.height = h;
+    if(!globalRenderLoopActive) return;
+    const fullscreenOn = document.body.classList.contains('fullscreen-active');
+    Object.keys(videoSlots).forEach(key => {
+      const i = parseInt(key,10);
+      const slot = videoSlots[i];
+      if(!slot.active){ slot.canvas.style.display = 'none'; return; }
 
-    const useVirtual = el('chkVirtualBg').checked && segModel;
-    if(raw.readyState >= 2 && raw.videoWidth > 0){
-      const { sx, sy, sw, sh } = coverRect(raw.videoWidth, raw.videoHeight, w, h);
-      if(useVirtual){
-        if(!segBusy){ segBusy = true; segModel.send({ image: raw }); }
-        if(lastSegMask){
-          ctx.save();
-          ctx.clearRect(0,0,w,h);
-          ctx.drawImage(lastSegMask.segmentationMask, sx, sy, sw, sh, 0, 0, w, h);
-          ctx.globalCompositeOperation = 'source-in';
-          ctx.drawImage(raw, sx, sy, sw, sh, 0, 0, w, h);
-          ctx.globalCompositeOperation = 'destination-over';
-          drawFancyBackground(ctx, w, h);
-          ctx.restore();
+      const rect = slotTargetRect(i);
+      if(!fullscreenOn || !rect){ slot.canvas.style.display = 'none'; return; }
+
+      const canvas = slot.canvas, raw = slot.raw;
+      canvas.style.display = 'block';
+      canvas.style.left = rect.left+'px';
+      canvas.style.top = rect.top+'px';
+      const w = Math.max(1, Math.round(rect.width)), h = Math.max(1, Math.round(rect.height));
+      if(canvas.width !== w) canvas.width = w;
+      if(canvas.height !== h) canvas.height = h;
+      canvas.style.width = w+'px';
+      canvas.style.height = h+'px';
+
+      const ctx = canvas.getContext('2d');
+      const useVirtual = el('chkVirtualBg').checked && slot.segModel;
+      if(raw.readyState >= 2 && raw.videoWidth > 0){
+        const { sx, sy, sw, sh } = coverRect(raw.videoWidth, raw.videoHeight, w, h);
+        if(useVirtual){
+          if(!slot.segBusy){ slot.segBusy = true; slot.segModel.send({ image: raw }); }
+          if(slot.lastSegMask){
+            ctx.save();
+            ctx.clearRect(0,0,w,h);
+            ctx.drawImage(slot.lastSegMask.segmentationMask, sx, sy, sw, sh, 0, 0, w, h);
+            ctx.globalCompositeOperation = 'source-in';
+            ctx.drawImage(raw, sx, sy, sw, sh, 0, 0, w, h);
+            ctx.globalCompositeOperation = 'destination-over';
+            drawFancyBackground(ctx, w, h);
+            ctx.restore();
+          } else {
+            drawFancyBackground(ctx, w, h);
+          }
         } else {
-          drawFancyBackground(ctx, w, h);
+          ctx.drawImage(raw, sx, sy, sw, sh, 0, 0, w, h);
         }
-      } else {
-        ctx.drawImage(raw, sx, sy, sw, sh, 0, 0, w, h);
       }
-    }
+    });
     requestAnimationFrame(frame);
   }
   frame();
-}
-
-function stopVideoRenderLoop(){
-  renderLoopActive = false;
-  lastSegMask = null;
 }
 el('btnLink').addEventListener('click', openLinkModal);
 el('btnCloseLink').addEventListener('click', () => el('linkBackdrop').classList.remove('open'));
