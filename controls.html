@@ -58,6 +58,7 @@
     <input id="codeInput" maxlength="4" inputmode="numeric" placeholder="0000">
     <button id="btnConnect" class="primary">Conectar</button>
     <div id="connStatus"></div>
+    <div style="margin-top:14px; font-size:.75rem; color:var(--muted);">Consejo: conecta el móvil a la misma red Wi-Fi que el ordenador para que el emparejamiento sea más rápido y fiable.</div>
   </div>
 
   <div id="controlScreen">
@@ -102,14 +103,35 @@
 const el = (id) => document.getElementById(id);
 let peer = null, conn = null;
 
+const ICE_CONFIG = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+  ]
+};
+
 el('btnConnect').addEventListener('click', () => {
   const code = el('codeInput').value.trim();
   if(code.length !== 4){ el('connStatus').textContent = 'Introduce el código de 4 cifras.'; return; }
+
+  el('btnConnect').disabled = true;
   el('connStatus').textContent = 'Conectando…';
-  peer = new Peer();
+
+  if(peer){ try{ peer.destroy(); }catch(e){} }
+
+  const openTimeout = setTimeout(() => {
+    el('connStatus').textContent = 'No se pudo establecer la conexión directa. Prueba a poner el móvil en la misma red Wi-Fi que el ordenador y vuelve a intentarlo.';
+    el('btnConnect').disabled = false;
+    if(peer){ try{ peer.destroy(); }catch(e){} }
+  }, 12000);
+
+  peer = new Peer(undefined, { config: ICE_CONFIG });
   peer.on('open', () => {
     conn = peer.connect('rosco-'+code, { reliable: true });
     conn.on('open', () => {
+      clearTimeout(openTimeout);
       el('pairScreen').style.display = 'none';
       el('controlScreen').style.display = 'block';
     });
@@ -118,9 +140,17 @@ el('btnConnect').addEventListener('click', () => {
       alert('Se perdió la conexión con la pantalla principal.');
       location.reload();
     });
-    conn.on('error', () => { el('connStatus').textContent = 'No se ha podido conectar. Revisa el código.'; });
+    conn.on('error', () => {
+      clearTimeout(openTimeout);
+      el('connStatus').textContent = 'No se ha podido conectar. Revisa el código.';
+      el('btnConnect').disabled = false;
+    });
   });
-  peer.on('error', () => { el('connStatus').textContent = 'Error de red. Revisa que ambos dispositivos tengan internet.'; });
+  peer.on('error', (e) => {
+    clearTimeout(openTimeout);
+    el('connStatus').textContent = 'Error de red (' + e.type + '). Revisa que ambos dispositivos tengan internet.';
+    el('btnConnect').disabled = false;
+  });
 });
 
 function send(obj){ if(conn && conn.open) conn.send(obj); }
