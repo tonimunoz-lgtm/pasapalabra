@@ -346,6 +346,7 @@ let timerId = null;
 let running = false;
 let recognition = null;
 let recognizing = false;
+let awaitingAnswer = false;
 let peer = null, mobileConn = null, cameraConn = null, pairCode = null;
 let connRoles = new WeakMap();
 let edDraft = ['',''], edTab = 0;
@@ -540,9 +541,9 @@ function setupRecognition(){
 }
 function startListening(){
   if(cameraConn && cameraConn.open){
+    awaitingAnswer = true;
     el('micDot').classList.add('listening');
     el('micStatus').textContent = 'Escuchando desde el móvil-cámara…';
-    cameraConn.send({type:'listen'});
     return;
   }
   if(el('chkCameraOnlyMic').checked){
@@ -554,11 +555,15 @@ function startListening(){
   try{ recognition.start(); }catch(e){}
 }
 function stopListening(){
-  if(cameraConn && cameraConn.open){ cameraConn.send({type:'stopListen'}); return; }
+  if(cameraConn && cameraConn.open){
+    awaitingAnswer = false;
+    el('micDot').classList.remove('listening');
+    return;
+  }
   if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
 }
 function handleTranscript(transcript, isFinal){
-  if(!running) return;
+  if(!running || !awaitingAnswer) return;
   const clean = transcript.trim();
   if(!clean) return;
   if(normalize(clean).includes('pasapalabra')){ if(isFinal) doPass(); return; }
@@ -823,6 +828,7 @@ function openLinkModal(){
         if(msg.role === 'camera'){
           cameraConn = conn;
           el('videoIndicator').textContent = (el('videoIndicator').textContent || '🎥 Cámara conectada') + ' 🎤';
+          cameraConn.send({type:'listen'});
         } else {
           mobileConn = conn;
           el('pairStatus').textContent = '📱 Mando conectado';
