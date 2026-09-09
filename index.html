@@ -378,20 +378,11 @@
           <button class="action-btn solucion" onclick="showSolution()">Solución</button>
         </div>
         <button class="action-btn fail" onclick="checkAnswer(false)">Fallar</button>
-      </div>
-    </div>
-
-    <!-- Lado Derecho: Marcadores y Estadísticas -->
-    <div class="side-panel">
+<div class="side-panel">
       <div class="scoreboard-card">
         <div class="panel-header-title">Marcador y tiempos</div>
-        
-        <!-- Contenedor Jugador 1 -->
         <div class="player-container active-turn" id="p1Box">
-          <div class="player-header">
-            <span>JUGADOR 1</span>
-            <span class="player-time" id="p1Time">02:30</span>
-          </div>
+          <div class="player-header"><span>JUGADOR 1</span><span class="player-time" id="p1Time">02:30</span></div>
           <div class="stats-row-grid">
             <div class="stat-mini-box"><span class="num" id="p1-ok" style="color:var(--green-btn)">0</span><span class="label">Correctas</span></div>
             <div class="stat-mini-box"><span class="num" id="p1-fail" style="color:var(--red-btn)">0</span><span class="label">Falladas</span></div>
@@ -399,13 +390,8 @@
             <div class="stat-mini-box"><span class="num" id="p1-rest">25</span><span class="label">Restantes</span></div>
           </div>
         </div>
-
-        <!-- Contenedor Jugador 2 -->
         <div class="player-container" id="p2Box">
-          <div class="player-header">
-            <span>JUGADOR 2</span>
-            <span class="player-time" id="p2Time">02:30</span>
-          </div>
+          <div class="player-header"><span>JUGADOR 2</span><span class="player-time" id="p2Time">02:30</span></div>
           <div class="stats-row-grid">
             <div class="stat-mini-box"><span class="num" id="p2-ok" style="color:var(--green-btn)">0</span><span class="label">Correctas</span></div>
             <div class="stat-mini-box"><span class="num" id="p2-fail" style="color:var(--red-btn)">0</span><span class="label">Falladas</span></div>
@@ -413,20 +399,15 @@
             <div class="stat-mini-box"><span class="num" id="p2-rest">25</span><span class="label">Restantes</span></div>
           </div>
         </div>
-
       </div>
     </div>
-
   </div>
 </div>
 
-<!-- Modal Editor de Palabras -->
 <div class="modal-overlay" id="editorModal">
   <div class="modal-card">
     <h3>Editar palabras de los Roscos</h3>
-    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">
-      Formato: JUGADOR(1 o 2)|LETRA|PREGUNTA|RESPUESTA
-    </p>
+    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Formato: JUGADOR(1 o 2)|LETRA|PREGUNTA|RESPUESTA</p>
     <textarea id="customWordsTextarea"></textarea>
     <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
       <button class="nav-btn secondary" onclick="closeModal()">Cancelar</button>
@@ -438,7 +419,48 @@
 <script>
   const alphabet = ["A","B","C","D","E","F","G","H","I","J","L","M","N","Ñ","O","P","Q","R","S","T","U","V","X","Y","Z"];
   let defaultWords = [];
-  
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'es-ES';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = function(event) {
+      let interimTranscript = '';
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) finalTranscript += event.results[i].transcript;
+        else interimTranscript += event.results[i].transcript;
+      }
+      const textoEscuchado = finalTranscript || interimTranscript;
+      
+      const input = document.getElementById('answerInput');
+      if (input && !input.disabled) {
+        input.value = textoEscuchado.trim();
+      }
+      
+      if (finalTranscript.toLowerCase().includes('pasapalabra')) {
+        passTurn();
+      }
+    };
+  }
+
+  function startListening() {
+    if (recognition && gameActive) {
+      try { recognition.start(); } catch(e) {}
+    }
+  }
+
+  function stopListening() {
+    if (recognition) {
+      try { recognition.stop(); } catch(e) {}
+    }
+  }
+
   function loadInitialDefaultWords() {
     defaultWords = [];
     alphabet.forEach(l => {
@@ -468,12 +490,13 @@
     1: { time: 150, currentIndex: 0, states: {}, words: [] },
     2: { time: 150, currentIndex: 0, states: {}, words: [] }
   };
-
   function initGame() {
     clearInterval(timerInterval);
     gameActive = false;
     document.getElementById('btnPlayPause').innerText = "Empezar";
     document.getElementById('answerInput').disabled = true;
+    stopListening();
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
     numPlayers = parseInt(document.getElementById('modeSelect').value);
     const initialTime = parseInt(document.getElementById('timeInput').value) || 150;
@@ -566,11 +589,10 @@
     const currentLetter = alphabet[pData.currentIndex];
     const currentWordObj = pData.words.find(w => w.letter === currentLetter);
 
-        document.getElementById('centerLetter').innerText = currentLetter;
+    document.getElementById('centerLetter').innerText = currentLetter;
     if (currentWordObj) {
       document.getElementById('centerClue').innerText = currentWordObj.clue;
       
-      // Activa la API de voz del navegador para leer la pregunta en alto
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(currentWordObj.clue);
@@ -578,7 +600,6 @@
         window.speechSynthesis.speak(utterance);
       }
     } else {
-
       document.getElementById('centerClue').innerText = `No hay definición cargada para la letra ${currentLetter}`;
     }
   }
@@ -590,14 +611,19 @@
       document.getElementById('answerInput').disabled = false;
       document.getElementById('answerInput').focus();
       startTimer();
+      startListening();
+      refreshLetterClasses();
+      updateActiveClueDisplay();
     } else {
       gameActive = false;
       document.getElementById('btnPlayPause').innerText = "Empezar";
       document.getElementById('answerInput').disabled = true;
       clearInterval(timerInterval);
+      stopListening();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      refreshLetterClasses();
+      updateActiveClueDisplay();
     }
-    refreshLetterClasses();
-    updateActiveClueDisplay();
   }
 
   function togglePauseGame() {
@@ -629,6 +655,8 @@
   function switchTurn() {
     if (numPlayers === 1) return;
     clearInterval(timerInterval);
+    stopListening();
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     
     activePlayer = activePlayer === 1 ? 2 : 1;
     
@@ -645,6 +673,7 @@
         return;
       }
       startTimer();
+      startListening();
     }
   }
 
@@ -654,18 +683,17 @@
     return `${m}:${s}`;
   }
 
-   function updateScoreboardUI() {
+  function updateScoreboardUI() {
     const targetPlayers =;
     targetPlayers.forEach(p => {
       if (!playersData[p] || !playersData[p].states) return;
-
       
       const timeEl = document.getElementById(`p${p}Time`);
       if (timeEl) timeEl.innerText = formatTime(playersData[p].time);
       
       let ok = 0, fail = 0, pass = 0, rest = 0;
       alphabet.forEach(l => {
- const st = playersData[p].states[l];
+        const st = playersData[p].states[l];
         if (st === 'correct') ok++;
         else if (st === 'wrong') fail++;
         else if (st === 'passed') pass++;
@@ -769,9 +797,7 @@
     if (currentWordObj) {
       document.getElementById('centerClue').innerHTML = `<span style="color:var(--green-btn); font-weight:bold; font-size:1.2rem;">SOLUCIÓN: ${currentWordObj.answer.toUpperCase()}</span>`;
     }
-  }
-
-  document.getElementById('answerInput').addEventListener('keydown', function(e) {
+    document.getElementById('answerInput').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       e.preventDefault();
       checkAnswer(true);
@@ -783,21 +809,26 @@
 
   function openModal() {
     const overlay = document.getElementById('editorModal');
-    overlay.classList.add('open');
+    if (overlay) overlay.classList.add('open');
     
     let txt = "";
     defaultWords.forEach(w => {
       txt += `${w.player}|${w.letter}|${w.clue}|${w.answer}\n`;
     });
-    document.getElementById('customWordsTextarea').value = txt.trim();
+    const txtArea = document.getElementById('customWordsTextarea');
+    if (txtArea) txtArea.value = txt.trim();
   }
 
   function closeModal() {
-    document.getElementById('editorModal').classList.remove('open');
+    const overlay = document.getElementById('editorModal');
+    if (overlay) overlay.classList.remove('open');
   }
 
   function saveCustomWords() {
-    const rawLines = document.getElementById('customWordsTextarea').value.split('\n');
+    const txtArea = document.getElementById('customWordsTextarea');
+    if (!txtArea) return;
+    
+    const rawLines = txtArea.value.split('\n');
     let parsedWords = [];
     
     rawLines.forEach(line => {
