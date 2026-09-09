@@ -51,6 +51,10 @@
   .mAnswerBox.reveal{ border-color: var(--gold); background: rgba(232,179,76,.1); }
   .mAnswerBox .placeholder{ color: var(--muted); font-style: italic; font-size:.85rem; }
   .mVerdictText{ text-align:center; font-size:.82rem; color:var(--muted); margin-top: -6px; margin-bottom: 6px; min-height: 1.2em; }
+  .mCorrectAnswer{
+    text-align:center; font-size:.95rem; font-weight:700; color: var(--gold);
+    margin-top: 12px; min-height: 1.3em;
+  }
   .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
   .grid.full{ grid-template-columns: 1fr; }
 
@@ -99,6 +103,7 @@
     <div class="grid full">
       <button id="mReveal">👁 Ver respuesta</button>
     </div>
+    <div class="mCorrectAnswer" id="mCorrectAnswer"></div>
   </div>
 
   <div id="editOverlay">
@@ -201,6 +206,7 @@ function updateFromHost(state){
     box.innerHTML = '<span class="placeholder">Aquí aparecerá lo que digas…</span>';
   }
   el('mVerdictText').textContent = state.verdictText || '';
+  el('mCorrectAnswer').textContent = state.correctAnswer ? 'Respuesta: ' + state.correctAnswer : '';
 }
 </script>
 </body>
