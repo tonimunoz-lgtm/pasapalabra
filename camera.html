@@ -123,22 +123,31 @@ el('btnConnect').addEventListener('click', async () => {
   peer = new Peer(undefined, { config: ICE_CONFIG });
   peer.on('open', () => {
     hostId = 'rosco-'+code;
-    call = peer.call(hostId, stream);
-    call.on('stream', () => {}); // no necesitamos vídeo de vuelta
-    clearTimeout(openTimeout);
-    el('pairScreen').style.display = 'none';
-    el('camScreen').style.display = 'block';
-    requestWakeLock();
 
     dataConn = peer.connect(hostId, { reliable: true });
+
     dataConn.on('open', () => {
+      clearTimeout(openTimeout);
       dataConn.send({ type: 'hello', role: 'camera' });
+      el('pairScreen').style.display = 'none';
+      el('camScreen').style.display = 'block';
+      requestWakeLock();
       primeMicrophone();
+
+      // El canal de datos ya está abierto; ahora sí lanzamos la llamada de vídeo
+      call = peer.call(hostId, stream);
+      call.on('stream', () => {}); // no necesitamos vídeo de vuelta
+      call.on('error', () => { el('camStatus').textContent = '⚠️ Error enviando el vídeo.'; });
     });
     dataConn.on('data', (msg) => {
       if(!msg || !msg.type) return;
       if(msg.type === 'listen') startCamListening();
       else if(msg.type === 'stopListen') stopCamListening();
+    });
+    dataConn.on('error', () => {
+      clearTimeout(openTimeout);
+      el('connStatus').textContent = 'No se pudo abrir el canal con la pantalla principal. Revisa el código y vuelve a intentarlo.';
+      el('btnConnect').disabled = false;
     });
   });
   peer.on('error', (e) => {
