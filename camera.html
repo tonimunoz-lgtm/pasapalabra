@@ -40,6 +40,8 @@
   button.primary{ background: var(--gold); color:#231705; border-color: var(--gold); }
   button.danger{ background: transparent; color: var(--red); border-color: var(--red); }
   button:active{ transform: scale(.97); }
+  .playerBtn{ padding: 12px; font-size:.9rem; }
+  .playerBtn.active{ background: var(--gold); color:#231705; border-color: var(--gold); }
 
   #camScreen{ display:none; max-width: 480px; margin: 0 auto; text-align:center; }
   #camStatus{ font-size: .9rem; color: var(--green); font-weight:700; margin: 10px 0 14px; }
@@ -53,15 +55,20 @@
   <p class="sub">Coloca el móvil en el trípode enfocando al jugador</p>
 
   <div id="pairScreen" class="panel">
+    <div style="display:flex; gap:10px; margin-bottom:14px;">
+      <button type="button" id="btnPlayer1" class="playerBtn active" style="flex:1;">🎥 Jugador 1</button>
+      <button type="button" id="btnPlayer2" class="playerBtn" style="flex:1;">🎥 Jugador 2</button>
+    </div>
     <input id="codeInput" maxlength="4" inputmode="numeric" placeholder="0000">
     <button id="btnConnect" class="primary">Conectar y empezar a grabar</button>
     <div id="connStatus"></div>
-    <div style="margin-top:14px; font-size:.75rem; color:var(--muted);">Usa el mismo código de 4 cifras que el mando del presentador. Ambos móviles se conectan por separado al ordenador.</div>
+    <div style="margin-top:14px; font-size:.75rem; color:var(--muted);">Usa el mismo código de 4 cifras que el mando del presentador. Si jugáis 2 jugadores, cada móvil-cámara elige a quién graba; en partidas de 1 jugador no importa cuál elijas.</div>
   </div>
 
   <div id="camScreen">
     <div class="panel">
       <div id="camStatus">Enviando imagen a la pantalla principal…</div>
+      <div id="camPlayerTag" style="font-size:.8rem; color:var(--gold); font-weight:700; margin-bottom:6px;"></div>
       <video id="localPreview" autoplay playsinline muted></video>
       <div class="row">
         <button id="btnFlip">🔄 Cambiar cámara</button>
@@ -74,6 +81,18 @@
 <script>
 const el = (id) => document.getElementById(id);
 let peer = null, call = null, stream = null, hostId = null, facing = 'environment', wakeLock = null;
+let myPlayer = 1;
+
+el('btnPlayer1').addEventListener('click', () => {
+  myPlayer = 1;
+  el('btnPlayer1').classList.add('active');
+  el('btnPlayer2').classList.remove('active');
+});
+el('btnPlayer2').addEventListener('click', () => {
+  myPlayer = 2;
+  el('btnPlayer2').classList.add('active');
+  el('btnPlayer1').classList.remove('active');
+});
 
 const ICE_CONFIG = {
   iceServers: [
@@ -121,11 +140,12 @@ el('btnConnect').addEventListener('click', async () => {
   peer = new Peer(undefined, { config: ICE_CONFIG });
   peer.on('open', () => {
     hostId = 'rosco-'+code;
-    call = peer.call(hostId, stream);
+    call = peer.call(hostId, stream, { metadata: { player: myPlayer } });
     call.on('stream', () => {}); // no necesitamos vídeo de vuelta
     clearTimeout(openTimeout);
     el('pairScreen').style.display = 'none';
     el('camScreen').style.display = 'block';
+    el('camPlayerTag').textContent = 'Grabando a: Jugador ' + myPlayer;
     requestWakeLock();
   });
   peer.on('error', (e) => {
