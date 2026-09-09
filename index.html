@@ -554,146 +554,175 @@
     refreshLetterClasses();
   }
 
-  function refreshLetterClasses() {
-    const pData = playersData[activePlayer];
-    const currentLetter = alphabet[pData.currentIndex];
+function refreshLetterClasses() {
+  const pData = playersData[activePlayer];
+  const currentLetter = alphabet[pData.currentIndex];
 
-    alphabet.forEach(letter => {
-      const node = document.getElementById(`node-${letter}`);
-      if (!node) return;
+  alphabet.forEach(letter => {
+    const node = document.getElementById(`node-${letter}`);
+    if (!node) return;
 
-      node.className = 'letter-node'; 
-      const state = pData.states[letter];
+    node.className = 'letter-node';
+    const state = pData.states[letter];
 
-      if (state === 'correct') node.classList.add('correct');
-      else if (state === 'wrong') node.classList.add('wrong');
-      else if (state === 'passed') node.classList.add('passed');
+    if (state === 'correct') node.classList.add('correct');
+    else if (state === 'wrong') node.classList.add('wrong');
+    else if (state === 'passed') node.classList.add('passed');
 
-      if (letter === currentLetter && gameActive) {
-        node.classList.add('current');
-      }
-    });
-  }
-
-  function updateActiveClueDisplay() {
-    const pData = playersData[activePlayer];
-    document.getElementById('centerPlayerTag').innerText = `JUGADOR ${activePlayer}`;
-    document.getElementById('centerPlayerTag').style.background = activePlayer === 1 ? 'var(--blue-bright)' : '#a855f7';
-
-    if (!gameActive) {
-      document.getElementById('centerLetter').innerText = "-";
-      document.getElementById('centerClue').innerText = 'Partida en pausa o pendiente. Pulsa "Empezar".';
-      return;
+    if (letter === currentLetter && gameActive) {
+      node.classList.add('current');
     }
+  });
+}
 
-    const currentLetter = alphabet[pData.currentIndex];
-    const currentWordObj = pData.words.find(w => w.letter === currentLetter);
+function updateActiveClueDisplay() {
+  const pData = playersData[activePlayer];
+  document.getElementById('centerPlayerTag').innerText = `JUGADOR ${activePlayer}`;
+  document.getElementById('centerPlayerTag').style.background =
+    activePlayer === 1 ? 'var(--blue-bright)' : '#a855f7';
 
-    document.getElementById('centerLetter').innerText = currentLetter;
-    if (currentWordObj) {
-      document.getElementById('centerClue').innerText = currentWordObj.clue;
-      
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(currentWordObj.clue);
-        utterance.lang = 'es-ES';
-        window.speechSynthesis.speak(utterance);
-      }
-    } else {
-      document.getElementById('centerClue').innerText = `No hay definición cargada para la letra ${currentLetter}`;
+  if (!gameActive) {
+    document.getElementById('centerLetter').innerText = "-";
+    document.getElementById('centerClue').innerText =
+      'Partida en pausa o pendiente. Pulsa "Empezar".';
+    return;
+  }
+
+  const currentLetter = alphabet[pData.currentIndex];
+  const currentWordObj = pData.words.find(w => w.letter === currentLetter);
+
+  document.getElementById('centerLetter').innerText = currentLetter;
+
+  if (currentWordObj) {
+    document.getElementById('centerClue').innerText = currentWordObj.clue;
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(currentWordObj.clue);
+      utterance.lang = 'es-ES';
+      window.speechSynthesis.speak(utterance);
     }
+  } else {
+    document.getElementById('centerClue').innerText =
+      `No hay definición cargada para la letra ${currentLetter}`;
   }
+}
 
-  function togglePlay() {
-    if (!gameActive) {
-      gameActive = true;
-      document.getElementById('btnPlayPause').innerText = "Detener";
-      document.getElementById('answerInput').disabled = false;
-      document.getElementById('answerInput').focus();
-      startTimer();
-      startListening();
-      refreshLetterClasses();
-      updateActiveClueDisplay();
-    } else {
-      gameActive = false;
-      document.getElementById('btnPlayPause').innerText = "Empezar";
-      document.getElementById('answerInput').disabled = true;
-      clearInterval(timerInterval);
-      stopListening();
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-      refreshLetterClasses();
-      updateActiveClueDisplay();
-    }
-  }
-
-  function togglePauseGame() {
-    if (gameActive) togglePlay();
-  }
-
-  function startTimer() {
-    clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
-      if (playersData[activePlayer].time > 0) {
-        playersData[activePlayer].time--;
-        updateScoreboardUI();
-        if (playersData[activePlayer].time <= 0) {
-          handleTimeOut();
-        }
-      }
-    }, 1000);
-  }
-
-  function handleTimeOut() {
-    alert(`¡Se le ha agotado el tiempo al Jugador ${activePlayer}!`);
-    if (numPlayers === 2) {
-      switchTurn();
-    } else {
-      togglePlay();
-    }
-  }
-
-  function switchTurn() {
-    if (numPlayers === 1) return;
+function togglePlay() {
+  if (!gameActive) {
+    gameActive = true;
+    document.getElementById('btnPlayPause').innerText = "Detener";
+    document.getElementById('answerInput').disabled = false;
+    document.getElementById('answerInput').focus();
+    startTimer();
+    startListening();
+    refreshLetterClasses();
+    updateActiveClueDisplay();
+  } else {
+    gameActive = false;
+    document.getElementById('btnPlayPause').innerText = "Empezar";
+    document.getElementById('answerInput').disabled = true;
     clearInterval(timerInterval);
     stopListening();
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    
-    activePlayer = activePlayer === 1 ? 2 : 1;
-    
-    document.getElementById('p1Box').className = activePlayer === 1 ? 'player-container active-turn' : 'player-container';
-    document.getElementById('p2Box').className = activePlayer === 2 ? 'player-container active-turn' : 'player-container';
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
 
     refreshLetterClasses();
     updateActiveClueDisplay();
+  }
+}
 
-    if (gameActive) {
+function togglePauseGame() {
+  if (gameActive) togglePlay();
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+
+  timerInterval = setInterval(() => {
+    if (playersData[activePlayer].time > 0) {
+      playersData[activePlayer].time--;
+      updateScoreboardUI();
+
       if (playersData[activePlayer].time <= 0) {
-        alert(`El Jugador ${activePlayer} no tiene tiempo restante.`);
-        activePlayer = activePlayer === 1 ? 2 : 1;
-        return;
+        handleTimeOut();
       }
-      startTimer();
-      startListening();
     }
+  }, 1000);
+}
+
+function handleTimeOut() {
+  alert(`¡Se le ha agotado el tiempo al Jugador ${activePlayer}!`);
+
+  if (numPlayers === 2) {
+    switchTurn();
+  } else {
+    togglePlay();
+  }
+}
+
+function switchTurn() {
+  if (numPlayers === 1) return;
+
+  clearInterval(timerInterval);
+  stopListening();
+
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
   }
 
-  function formatTime(sec) {
-    const m = Math.floor(sec / 60).toString().padStart(2, '0');
-    const s = (sec % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-  }
+  activePlayer = activePlayer === 1 ? 2 : 1;
 
-  function updateScoreboardUI() {
+  document.getElementById('p1Box').className =
+    activePlayer === 1
+      ? 'player-container active-turn'
+      : 'player-container';
+
+  document.getElementById('p2Box').className =
+    activePlayer === 2
+      ? 'player-container active-turn'
+      : 'player-container';
+
+  refreshLetterClasses();
+  updateActiveClueDisplay();
+
+  if (gameActive) {
+    if (playersData[activePlayer].time <= 0) {
+      alert(`El Jugador ${activePlayer} no tiene tiempo restante.`);
+      activePlayer = activePlayer === 1 ? 2 : 1;
+      return;
+    }
+
+    startTimer();
+    startListening();
+  }
+}
+
+function formatTime(sec) {
+  const m = Math.floor(sec / 60).toString().padStart(2, '0');
+  const s = (sec % 60).toString().padStart(2, '0');
+
+  return `${m}:${s}`;
+}
+
+function updateScoreboardUI() {
   const targetPlayers = [0, 1];
 
   targetPlayers.forEach(p => {
-
     if (!playersData[p] || !playersData[p].states) return;
 
     const timeEl = document.getElementById(`p${p}Time`);
-    if (timeEl) timeEl.innerText = formatTime(playersData[p].time);
 
-    let ok = 0, fail = 0, pass = 0, rest = 0;
+    if (timeEl) {
+      timeEl.innerText = formatTime(playersData[p].time);
+    }
+
+    let ok = 0;
+    let fail = 0;
+    let pass = 0;
+    let rest = 0;
 
     alphabet.forEach(l => {
       const st = playersData[p].states[l];
@@ -715,73 +744,78 @@
     if (restEl) restEl.innerText = rest;
   });
 }
-  function advanceToNextLetter() {
-    const pData = playersData[activePlayer];
-    let foundNext = false;
-    let checkedCount = 0;
 
-    let idx = pData.currentIndex;
-    while (checkedCount < alphabet.length) {
-      idx = (idx + 1) % alphabet.length;
-      const letter = alphabet[idx];
-      if (pData.states[letter] === 'pending' || pData.states[letter] === 'passed') {
-        pData.currentIndex = idx;
-        foundNext = true;
-        break;
-      }
-      checkedCount++;
+function advanceToNextLetter() {
+  const pData = playersData[activePlayer];
+  let foundNext = false;
+  let checkedCount = 0;
+
+  let idx = pData.currentIndex;
+
+  while (checkedCount < alphabet.length) {
+    idx = (idx + 1) % alphabet.length;
+
+    const letter = alphabet[idx];
+
+    if (
+      pData.states[letter] === 'pending' ||
+      pData.states[letter] === 'passed'
+    ) {
+      pData.currentIndex = idx;
+      foundNext = true;
+      break;
     }
 
-    if (!foundNext) {
-      alert(`¡El Jugador ${activePlayer} ha completado todas sus palabras!`);
-      if (numPlayers === 2) {
-        switchTurn();
-      } else {
-        togglePlay();
-      }
+    checkedCount++;
+  }
+
+  if (!foundNext) {
+    alert(`¡El Jugador ${activePlayer} ha completado todas sus palabras!`);
+
+    if (numPlayers === 2) {
+      switchTurn();
     } else {
-      refreshLetterClasses();
-      updateActiveClueDisplay();
+      togglePlay();
+    }
+  } else {
+    refreshLetterClasses();
+    updateActiveClueDisplay();
+  }
+}
+
+function checkAnswer(isCorrectManual) {
+  if (!gameActive) return;
+
+  const pData = playersData[activePlayer];
+  const currentLetter = alphabet[pData.currentIndex];
+  const currentWordObj = pData.words.find(
+    w => w.letter === currentLetter
+  );
+
+  const inputVal = document
+    .getElementById('answerInput')
+    .value
+    .trim()
+    .toLowerCase();
+
+  let isCorrect = false;
+
+  if (isCorrectManual === true) {
+    if (
+      currentWordObj &&
+      inputVal === currentWordObj.answer.toLowerCase()
+    ) {
+      isCorrect = true;
     }
   }
 
-  function checkAnswer(isCorrectManual) {
-    if (!gameActive) return;
-    const pData = playersData[activePlayer];
-    const currentLetter = alphabet[pData.currentIndex];
-    const currentWordObj = pData.words.find(w => w.letter === currentLetter);
-    const inputVal = document.getElementById('answerInput').value.trim().toLowerCase();
-    
-    let isCorrect = false;
-    if (isCorrectManual === true) {
-      if (currentWordObj && inputVal === currentWordObj.answer.toLowerCase()) {
-        isCorrect = true;
-      }
-    }
-
-    if (isCorrect) {
-      playersData[activePlayer].states[currentLetter] = 'correct';
-      document.getElementById('answerInput').value = "";
-      updateScoreboardUI();
-      advanceToNextLetter();
-    } else {
-      playersData[activePlayer].states[currentLetter] = 'wrong';
-      document.getElementById('answerInput').value = "";
-      updateScoreboardUI();
-      if (numPlayers === 2) {
-        switchTurn();
-      } else {
-        advanceToNextLetter();
-      }
-    }
-  }
-
-  function passTurn() {
-    if (!gameActive) return;
-    const pData = playersData[activePlayer];
-    const currentLetter = alphabet[pData.currentIndex];
-    
-    pData.states[currentLetter] = 'passed';
+  if (isCorrect) {
+    playersData[activePlayer].states[currentLetter] = 'correct';
+    document.getElementById('answerInput').value = "";
+    updateScoreboardUI();
+    advanceToNextLetter();
+  } else {
+    playersData[activePlayer].states[currentLetter] = 'wrong';
     document.getElementById('answerInput').value = "";
     updateScoreboardUI();
 
@@ -791,82 +825,121 @@
       advanceToNextLetter();
     }
   }
+}
 
-  function showSolution() {
-    if (!gameActive) return;
-    const pData = playersData[activePlayer];
-    const currentLetter = alphabet[pData.currentIndex];
-    const currentWordObj = pData.words.find(w => w.letter === currentLetter);
-    if (currentWordObj) {
-      document.getElementById('centerClue').innerHTML = `<span style="color:var(--green-btn); font-weight:bold; font-size:1.2rem;">SOLUCIÓN: ${currentWordObj.answer.toUpperCase()}</span>`;
-    }
-    document.getElementById('answerInput').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      checkAnswer(true);
-    } else if (e.key === ' ' && this.value.trim() === '') {
-      e.preventDefault();
-      passTurn();
+function passTurn() {
+  if (!gameActive) return;
+
+  const pData = playersData[activePlayer];
+  const currentLetter = alphabet[pData.currentIndex];
+
+  pData.states[currentLetter] = 'passed';
+  document.getElementById('answerInput').value = "";
+  updateScoreboardUI();
+
+  if (numPlayers === 2) {
+    switchTurn();
+  } else {
+    advanceToNextLetter();
+  }
+}
+
+function showSolution() {
+  if (!gameActive) return;
+
+  const pData = playersData[activePlayer];
+  const currentLetter = alphabet[pData.currentIndex];
+  const currentWordObj = pData.words.find(
+    w => w.letter === currentLetter
+  );
+
+  if (currentWordObj) {
+    document.getElementById('centerClue').innerHTML =
+      `<span style="color:var(--green-btn); font-weight:bold; font-size:1.2rem;">
+        SOLUCIÓN: ${currentWordObj.answer.toUpperCase()}
+      </span>`;
+  }
+}
+
+document.getElementById('answerInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    checkAnswer(true);
+  } else if (e.key === ' ' && this.value.trim() === '') {
+    e.preventDefault();
+    passTurn();
+  }
+});
+
+function openModal() {
+  const overlay = document.getElementById('editorModal');
+
+  if (overlay) {
+    overlay.classList.add('open');
+  }
+
+  let txt = "";
+
+  defaultWords.forEach(w => {
+    txt += `${w.player}|${w.letter}|${w.clue}|${w.answer}\n`;
+  });
+
+  const txtArea = document.getElementById('customWordsTextarea');
+
+  if (txtArea) {
+    txtArea.value = txt.trim();
+  }
+}
+
+function closeModal() {
+  const overlay = document.getElementById('editorModal');
+
+  if (overlay) {
+    overlay.classList.remove('open');
+  }
+}
+
+function saveCustomWords() {
+  const txtArea = document.getElementById('customWordsTextarea');
+
+  if (!txtArea) return;
+
+  const rawLines = txtArea.value.split('\n');
+  let parsedWords = [];
+
+  rawLines.forEach(line => {
+    const parts = line.split('|');
+
+    if (parts.length >= 4) {
+      parsedWords.push({
+        player: parseInt(parts[0].trim()) || 1,
+        letter: parts[1].trim().toUpperCase(),
+        clue: parts[2].trim(),
+        answer: parts[3].trim()
+      });
     }
   });
 
-  function openModal() {
-    const overlay = document.getElementById('editorModal');
-    if (overlay) overlay.classList.add('open');
-    
-    let txt = "";
-    defaultWords.forEach(w => {
-      txt += `${w.player}|${w.letter}|${w.clue}|${w.answer}\n`;
-    });
-    const txtArea = document.getElementById('customWordsTextarea');
-    if (txtArea) txtArea.value = txt.trim();
+  if (parsedWords.length > 0) {
+    defaultWords = parsedWords;
+    alert("¡Palabras actualizadas con éxito!");
+    closeModal();
+    initGame();
+  } else {
+    alert(
+      "El formato no es válido o está vacío. Comprueba las líneas."
+    );
   }
+}
 
-  function closeModal() {
-    const overlay = document.getElementById('editorModal');
-    if (overlay) overlay.classList.remove('open');
-  }
-
-  function saveCustomWords() {
-    const txtArea = document.getElementById('customWordsTextarea');
-    if (!txtArea) return;
-    
-    const rawLines = txtArea.value.split('\n');
-    let parsedWords = [];
-    
-    rawLines.forEach(line => {
-      const parts = line.split('|');
-      if (parts.length >= 4) {
-        parsedWords.push({
-          player: parseInt(parts[0].trim()) || 1,
-          letter: parts[1].trim().toUpperCase(),
-          clue: parts[2].trim(),
-          answer: parts[3].trim()
-        });
-      }
-    });
-
-    if (parsedWords.length > 0) {
-      defaultWords = parsedWords;
-      alert("¡Palabras actualizadas con éxito!");
-      closeModal();
-      initGame();
-    } else {
-      alert("El formato no es válido o está vacío. Comprueba las líneas.");
-    }
-  }
-
-  function loadDefaultWords() {
-    if(confirm("¿Quieres restablecer las definiciones por defecto?")) {
-      loadInitialDefaultWords();
-      initGame();
-    }
-  }
-
-  window.onload = function() {
+function loadDefaultWords() {
+  if (confirm("¿Quieres restablecer las definiciones por defecto?")) {
     loadInitialDefaultWords();
     initGame();
-  };
-</script>
-</body>
-</html>
+  }
+}
+
+window.onload = function() {
+  loadInitialDefaultWords();
+  initGame();
+};
