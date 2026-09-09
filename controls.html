@@ -142,6 +142,7 @@ el('btnConnect').addEventListener('click', () => {
     conn = peer.connect(hostId, { reliable: true });
     conn.on('open', () => {
       clearTimeout(openTimeout);
+      conn.send({ type: 'hello', role: 'controls' });
       el('pairScreen').style.display = 'none';
       el('controlScreen').style.display = 'block';
     });
