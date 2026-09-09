@@ -50,6 +50,7 @@
   .mAnswerBox.wrong{ border-color: var(--red); background: rgba(239,68,68,.12); }
   .mAnswerBox.reveal{ border-color: var(--gold); background: rgba(232,179,76,.1); }
   .mAnswerBox .placeholder{ color: var(--muted); font-style: italic; font-size:.85rem; }
+  .mVerdictText{ text-align:center; font-size:.82rem; color:var(--muted); margin-top: -6px; margin-bottom: 6px; min-height: 1.2em; }
   .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
   .grid.full{ grid-template-columns: 1fr; }
 
@@ -75,6 +76,7 @@
       <div class="mTurn" id="mTurn"></div>
       <div class="micline" id="mMic"></div>
       <div class="mAnswerBox" id="mAnswerBox"><span class="placeholder">Aquí aparecerá lo que digas…</span></div>
+      <div class="mVerdictText" id="mVerdictText"></div>
     </div>
 
     <div class="grid">
@@ -198,6 +200,7 @@ function updateFromHost(state){
   } else {
     box.innerHTML = '<span class="placeholder">Aquí aparecerá lo que digas…</span>';
   }
+  el('mVerdictText').textContent = state.verdictText || '';
 }
 </script>
 </body>
