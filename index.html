@@ -566,10 +566,19 @@
     const currentLetter = alphabet[pData.currentIndex];
     const currentWordObj = pData.words.find(w => w.letter === currentLetter);
 
-    document.getElementById('centerLetter').innerText = currentLetter;
+        document.getElementById('centerLetter').innerText = currentLetter;
     if (currentWordObj) {
       document.getElementById('centerClue').innerText = currentWordObj.clue;
+      
+      // Activa la API de voz del navegador para leer la pregunta en alto
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(currentWordObj.clue);
+        utterance.lang = 'es-ES';
+        window.speechSynthesis.speak(utterance);
+      }
     } else {
+
       document.getElementById('centerClue').innerText = `No hay definición cargada para la letra ${currentLetter}`;
     }
   }
