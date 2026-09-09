@@ -384,3 +384,450 @@
         <div class="input-row">
           <input type="text" class="text-input-field" id="answerInput" placeholder="Escribe y pulsa Enter (o Espacio = pasar)..." disabled>
           <button class="action-btn ok" onclick="checkAnswer(true)">OK</button>
+          <button class="action-btn pasar" onclick="passTurn()">Pasar</button>
+          <button class="action-btn solucion" onclick="showSolution()">Solución</button>
+        </div>
+        <button class="action-btn fail" onclick="checkAnswer(false)">Fallar</button>
+      </div>
+    </div>
+
+    <!-- Lado Derecho: Marcadores y Estadísticas -->
+    <div class="side-panel">
+      <div class="scoreboard-card">
+        <div class="panel-header-title">Marcador y tiempos</div>
+        
+        <!-- Contenedor Jugador 1 -->
+        <div class="player-container active-turn" id="p1Box">
+          <div class="player-header">
+            <span>JUGADOR 1</span>
+            <span class="player-time" id="p1Time">02:30</span>
+          </div>
+          <div class="stats-row-grid">
+            <div class="stat-mini-box"><span class="num" id="p1-ok" style="color:var(--green-btn)">0</span><span class="label">Correctas</span></div>
+            <div class="stat-mini-box"><span class="num" id="p1-fail" style="color:var(--red-btn)">0</span><span class="label">Falladas</span></div>
+            <div class="stat-mini-box"><span class="num" id="p1-pass" style="color:var(--yellow-btn)">0</span><span class="label">Pasadas</span></div>
+            <div class="stat-mini-box"><span class="num" id="p1-rest">25</span><span class="label">Restantes</span></div>
+          </div>
+        </div>
+
+        <!-- Contenedor Jugador 2 -->
+        <div class="player-container" id="p2Box">
+          <div class="player-header">
+            <span>JUGADOR 2</span>
+            <span class="player-time" id="p2Time">02:30</span>
+          </div>
+          <div class="stats-row-grid">
+            <div class="stat-mini-box"><span class="num" id="p2-ok" style="color:var(--green-btn)">0</span><span class="label">Correctas</span></div>
+            <div class="stat-mini-box"><span class="num" id="p2-fail" style="color:var(--red-btn)">0</span><span class="label">Falladas</span></div>
+            <div class="stat-mini-box"><span class="num" id="p2-pass" style="color:var(--yellow-btn)">0</span><span class="label">Pasadas</span></div>
+            <div class="stat-mini-box"><span class="num" id="p2-rest">25</span><span class="label">Restantes</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal Editor de Palabras -->
+<div class="modal-overlay" id="editorModal">
+  <div class="modal-card">
+    <h3>Editar palabras de los Roscos</h3>
+    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">
+      Formato: JUGADOR(1 o 2)|LETRA|PREGUNTA|RESPUESTA
+    </p>
+    <textarea id="customWordsTextarea"></textarea>
+    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+      <button class="nav-btn secondary" onclick="closeModal()">Cancelar</button>
+      <button class="nav-btn" onclick="saveCustomWords()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const alphabet = ["A","B","C","D","E","F","G","H","I","J","L","M","N","Ñ","O","P","Q","R","S","T","U","V","X","Y","Z"];
+  
+  let defaultWords = [];
+  
+  function loadInitialDefaultWords() {
+    defaultWords = [];
+    alphabet.forEach(l => {
+      defaultWords.push({player: 1, letter: l, clue: `Empieza por ${l}: Definición de prueba para Jugador 1 de la letra ${l}.`, answer: l});
+      defaultWords.push({player: 2, letter: l, clue: `Empieza por ${l}: Definición de prueba para Jugador 2 de la letra ${l}.`, answer: l});
+    });
+
+    let a1 = defaultWords.find(w => w.player === 1 && w.letter === 'A');
+    if(a1) {
+      a1.clue = "Empieza por A: Personaje de Disney que vive bajo el mar y es una princesa.";
+      a1.answer = "ariel";
+    }
+
+    let a2 = defaultWords.find(w => w.player === 2 && w.letter === 'A');
+    if(a2) {
+      a2.clue = "Empieza por A: Animal mamífero volador de hábitos nocturnos.";
+      a2.answer = "murcielago";
+    }
+  }
+
+  let gameActive = false;
+  let numPlayers = 2;
+  let activePlayer = 1;
+  let timerInterval = null;
+
+  let playersData = {
+    1: { time: 150, currentIndex: 0, states: {}, words: [] },
+    2: { time: 150, currentIndex: 0, states: {}, words: [] }
+  };
+
+  function initGame() {
+    clearInterval(timerInterval);
+    gameActive = false;
+    document.getElementById('btnPlayPause').innerText = "Empezar";
+    document.getElementById('answerInput').disabled = true;
+
+    numPlayers = parseInt(document.getElementById('modeSelect').value);
+    const initialTime = parseInt(document.getElementById('timeInput').value) || 150;
+
+    document.getElementById('p2Box').style.display = numPlayers === 2 ? 'block' : 'none';
+
+    playersData[1] = { time: initialTime, currentIndex: 0, states: {}, words: defaultWords.filter(w => w.player === 1) };
+    playersData[2] = { time: initialTime, currentIndex: 0, states: {}, words: defaultWords.filter(w => w.player === 2) };
+
+    alphabet.forEach(l => {
+      playersData[1].states[l] = 'pending';
+      playersData[2].states[l] = 'pending';
+    });
+
+    activePlayer = 1;
+    document.getElementById('p1Box').className = 'player-container active-turn';
+    document.getElementById('p2Box').className = 'player-container';
+    
+    updateScoreboardUI();
+    renderRoscoCircle();
+    updateActiveClueDisplay();
+  }
+
+  function resetTimers() {
+    const initialTime = parseInt(document.getElementById('timeInput').value) || 150;
+    playersData[1].time = initialTime;
+    playersData[2].time = initialTime;
+    updateScoreboardUI();
+  }
+
+  function renderRoscoCircle() {
+    const wrapper = document.getElementById('roscoWrapper');
+    const oldNodes = wrapper.querySelectorAll('.letter-node');
+    oldNodes.forEach(n => n.remove());
+
+    const totalLetters = alphabet.length;
+    const radius = 43; 
+
+    alphabet.forEach((letter, index) => {
+      const node = document.createElement('div');
+      node.classList.add('letter-node');
+      node.id = `node-${letter}`;
+      node.innerText = letter;
+
+      const angle = (index / totalLetters) * 2 * Math.PI - Math.PI / 2;
+      const x = 50 + radius * Math.cos(angle);
+      const y = 50 + radius * Math.sin(angle);
+
+      node.style.left = `${x}%`;
+      node.style.top = `${y}%`;
+
+      wrapper.appendChild(node);
+    });
+
+    refreshLetterClasses();
+  }
+
+  function refreshLetterClasses() {
+    const pData = playersData[activePlayer];
+    const currentLetter = alphabet[pData.currentIndex];
+
+    alphabet.forEach(letter => {
+      const node = document.getElementById(`node-${letter}`);
+      if (!node) return;
+
+      node.className = 'letter-node'; 
+      const state = pData.states[letter];
+
+      if (state === 'correct') node.classList.add('correct');
+      else if (state === 'wrong') node.classList.add('wrong');
+      else if (state === 'passed') node.classList.add('passed');
+
+      if (letter === currentLetter && gameActive) {
+        node.classList.add('current');
+      }
+    });
+  }
+
+  function updateActiveClueDisplay() {
+    const pData = playersData[activePlayer];
+    document.getElementById('centerPlayerTag').innerText = `JUGADOR ${activePlayer}`;
+    document.getElementById('centerPlayerTag').style.background = activePlayer === 1 ? 'var(--blue-bright)' : '#a855f7';
+
+    if (!gameActive) {
+      document.getElementById('centerLetter').innerText = "-";
+      document.getElementById('centerClue').innerText = 'Partida en pausa o pendiente. Pulsa "Empezar".';
+      return;
+    }
+
+    const currentLetter = alphabet[pData.currentIndex];
+    const currentWordObj = pData.words.find(w => w.letter === currentLetter);
+
+    document.getElementById('centerLetter').innerText = currentLetter;
+    if (currentWordObj) {
+      document.getElementById('centerClue').innerText = currentWordObj.clue;
+    } else {
+      document.getElementById('centerClue').innerText = `No hay definición cargada para la letra ${currentLetter}`;
+    }
+  }
+
+  function togglePlay() {
+    if (!gameActive) {
+      gameActive = true;
+      document.getElementById('btnPlayPause').innerText = "Detener";
+      document.getElementById('answerInput').disabled = false;
+      document.getElementById('answerInput').focus();
+      startTimer();
+    } else {
+      gameActive = false;
+      document.getElementById('btnPlayPause').innerText = "Empezar";
+      document.getElementById('answerInput').disabled = true;
+      clearInterval(timerInterval);
+    }
+    refreshLetterClasses();
+    updateActiveClueDisplay();
+  }
+
+  function togglePauseGame() {
+    if (gameActive) togglePlay();
+  }
+
+  function startTimer() {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      if (playersData[activePlayer].time > 0) {
+        playersData[activePlayer].time--;
+        updateScoreboardUI();
+        if (playersData[activePlayer].time <= 0) {
+          handleTimeOut();
+        }
+      }
+    }, 1000);
+  }
+
+  function handleTimeOut() {
+    alert(`¡Se le ha agotado el tiempo al Jugador ${activePlayer}!`);
+    if (numPlayers === 2) {
+      switchTurn();
+    } else {
+      togglePlay();
+    }
+  }
+
+  function switchTurn() {
+    if (numPlayers === 1) return;
+    clearInterval(timerInterval);
+    
+    activePlayer = activePlayer === 1 ? 2 : 1;
+    
+    document.getElementById('p1Box').className = activePlayer === 1 ? 'player-container active-turn' : 'player-container';
+    document.getElementById('p2Box').className = activePlayer === 2 ? 'player-container active-turn' : 'player-container';
+
+    refreshLetterClasses();
+    updateActiveClueDisplay();
+
+    if (gameActive) {
+      if (playersData[activePlayer].time <= 0) {
+        alert(`El Jugador ${activePlayer} no tiene tiempo restante.`);
+        activePlayer = activePlayer === 1 ? 2 : 1;
+        return;
+      }
+      startTimer();
+    }
+  }
+
+  function formatTime(sec) {
+    const m = Math.floor(sec / 60).toString().padStart(2, '0');
+    const s = (sec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  function updateScoreboardUI() {
+    [1, 2].forEach(p => {
+      if (!playersData[p] || !playersData[p].states) return;
+      document.getElementById(`p${p}Time`).innerText = formatTime(playersData[p].time);
+      
+      let ok = 0, fail = 0, pass = 0, rest = 0;
+      alphabet.forEach(l => {
+        const st = playersData[p].states[l];
+        if (st === 'correct') ok++;
+        else if (st === 'wrong') fail++;
+        else if (st === 'passed') pass++;
+        else rest++;
+      });
+
+      document.getElementById(`p${p}-ok`).innerText = ok;
+      document.getElementById(`p${p}-fail`).innerText = fail;
+      document.getElementById(`p${p}-pass`).innerText = pass;
+      document.getElementById(`p${p}-rest`).innerText = rest;
+    });
+  }
+
+  function advanceToNextLetter() {
+    const pData = playersData[activePlayer];
+    let foundNext = false;
+    let checkedCount = 0;
+
+    let idx = pData.currentIndex;
+    while (checkedCount < alphabet.length) {
+      idx = (idx + 1) % alphabet.length;
+      const letter = alphabet[idx];
+      if (pData.states[letter] === 'pending' || pData.states[letter] === 'passed') {
+        pData.currentIndex = idx;
+        foundNext = true;
+        break;
+      }
+      checkedCount++;
+    }
+
+    if (!foundNext) {
+      alert(`¡El Jugador ${activePlayer} ha completado todas sus palabras!`);
+      if (numPlayers === 2) {
+        switchTurn();
+      } else {
+        togglePlay();
+      }
+    } else {
+      refreshLetterClasses();
+      updateActiveClueDisplay();
+    }
+  }
+
+  function checkAnswer(isCorrectManual) {
+    if (!gameActive) return;
+    const pData = playersData[activePlayer];
+    const currentLetter = alphabet[pData.currentIndex];
+    const currentWordObj = pData.words.find(w => w.letter === currentLetter);
+    const inputVal = document.getElementById('answerInput').value.trim().toLowerCase();
+    
+    let isCorrect = false;
+    if (isCorrectManual === true) {
+      if (currentWordObj && inputVal === currentWordObj.answer.toLowerCase()) {
+        isCorrect = true;
+      }
+    }
+
+    if (isCorrect) {
+      playersData[activePlayer].states[currentLetter] = 'correct';
+      document.getElementById('answerInput').value = "";
+      updateScoreboardUI();
+      advanceToNextLetter();
+    } else {
+      playersData[activePlayer].states[currentLetter] = 'wrong';
+      document.getElementById('answerInput').value = "";
+      updateScoreboardUI();
+      if (numPlayers === 2) {
+        switchTurn();
+      } else {
+        advanceToNextLetter();
+      }
+    }
+  }
+
+  function passTurn() {
+    if (!gameActive) return;
+    const pData = playersData[activePlayer];
+    const currentLetter = alphabet[pData.currentIndex];
+    
+    pData.states[currentLetter] = 'passed';
+    document.getElementById('answerInput').value = "";
+    updateScoreboardUI();
+
+    if (numPlayers === 2) {
+      switchTurn();
+    } else {
+      advanceToNextLetter();
+    }
+  }
+
+  function showSolution() {
+    if (!gameActive) return;
+    const pData = playersData[activePlayer];
+    const currentLetter = alphabet[pData.currentIndex];
+    const currentWordObj = pData.words.find(w => w.letter === currentLetter);
+    if (currentWordObj) {
+      document.getElementById('centerClue').innerHTML = `<span style="color:var(--green-btn); font-weight:bold; font-size:1.2rem;">SOLUCIÓN: ${currentWordObj.answer.toUpperCase()}</span>`;
+    }
+  }
+
+  document.getElementById('answerInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      checkAnswer(true);
+    } else if (e.key === ' ' && this.value.trim() === '') {
+      e.preventDefault();
+      passTurn();
+    }
+  });
+
+  function openModal() {
+    const overlay = document.getElementById('editorModal');
+    overlay.classList.add('open');
+    
+    let txt = "";
+    defaultWords.forEach(w => {
+      txt += `${w.player}|${w.letter}|${w.clue}|${w.answer}
+`;
+    });
+    document.getElementById('customWordsTextarea').value = txt.trim();
+  }
+
+  function closeModal() {
+    document.getElementById('editorModal').classList.remove('open');
+  }
+
+  function saveCustomWords() {
+    const rawLines = document.getElementById('customWordsTextarea').value.split('
+');
+    let parsedWords = [];
+    
+    rawLines.forEach(line => {
+      const parts = line.split('|');
+      if (parts.length >= 4) {
+        parsedWords.push({
+          player: parseInt(parts[0].trim()) || 1,
+          letter: parts[1].trim().toUpperCase(),
+          clue: parts[2].trim(),
+          answer: parts[3].trim()
+        });
+      }
+    });
+
+    if (parsedWords.length > 0) {
+      defaultWords = parsedWords;
+      alert("¡Palabras actualizadas con éxito!");
+      closeModal();
+      initGame();
+    } else {
+      alert("El formato no es válido o está vacío. Comprueba las líneas.");
+    }
+  }
+
+  function loadDefaultWords() {
+    if(confirm("¿Quieres restablecer las definiciones por defecto?")) {
+      loadInitialDefaultWords();
+      initGame();
+    }
+  }
+
+  window.onload = function() {
+    loadInitialDefaultWords();
+    initGame();
+  };
+</script>
+</body>
+</html>
