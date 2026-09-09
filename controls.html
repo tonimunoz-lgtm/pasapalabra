@@ -88,6 +88,10 @@
     <div class="grid full">
       <button id="mReveal">👁 Ver respuesta</button>
     </div>
+    <div class="grid full">
+      <button id="mCamera">🎥 Compartir cámara</button>
+    </div>
+    <video id="localPreview" autoplay playsinline muted style="width:100%;border-radius:10px;margin-top:10px;display:none;"></video>
   </div>
 
   <div id="editOverlay">
@@ -129,7 +133,8 @@ el('btnConnect').addEventListener('click', () => {
 
   peer = new Peer(undefined, { config: ICE_CONFIG });
   peer.on('open', () => {
-    conn = peer.connect('rosco-'+code, { reliable: true });
+    hostId = 'rosco-'+code;
+    conn = peer.connect(hostId, { reliable: true });
     conn.on('open', () => {
       clearTimeout(openTimeout);
       el('pairScreen').style.display = 'none';
@@ -163,6 +168,27 @@ el('mWrong').addEventListener('click', () => send({type:'wrong'}));
 el('mPass').addEventListener('click', () => send({type:'pass'}));
 el('mRepeat').addEventListener('click', () => send({type:'repeat'}));
 el('mReveal').addEventListener('click', () => send({type:'reveal'}));
+
+let camStream = null, camCall = null, hostId = null;
+el('mCamera').addEventListener('click', async () => {
+  if(camStream){
+    camStream.getTracks().forEach(t=>t.stop());
+    if(camCall) camCall.close();
+    camStream = null; camCall = null;
+    el('localPreview').style.display = 'none';
+    el('mCamera').textContent = '🎥 Compartir cámara';
+    return;
+  }
+  try{
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+    el('localPreview').srcObject = camStream;
+    el('localPreview').style.display = 'block';
+    camCall = peer.call(hostId, camStream);
+    el('mCamera').textContent = '⏹ Detener cámara';
+  }catch(e){
+    alert('No se ha podido acceder a la cámara. Revisa los permisos del navegador.');
+  }
+});
 
 el('mEdit').addEventListener('click', () => { el('editOverlay').style.display = 'block'; });
 el('mCancelWords').addEventListener('click', () => { el('editOverlay').style.display = 'none'; });
