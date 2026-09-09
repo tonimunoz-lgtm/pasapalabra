@@ -696,21 +696,39 @@ function applyRemoteWords(text){
 }
 
 // ---------- Vincular móvil (PeerJS) ----------
+const ICE_CONFIG = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+  ]
+};
+
 function openLinkModal(){
   pairCode = String(Math.floor(1000 + Math.random()*9000));
   el('pairCodeDisplay').textContent = pairCode;
   el('pairStatus').textContent = 'Generando código…';
   el('linkBackdrop').classList.add('open');
   if(peer){ try{ peer.destroy(); }catch(e){} }
-  peer = new Peer('rosco-'+pairCode);
+  mobileConn = null;
+  peer = new Peer('rosco-'+pairCode, { config: ICE_CONFIG });
   peer.on('open', () => { el('pairStatus').textContent = 'Esperando conexión del móvil…'; });
   peer.on('connection', (conn) => {
-    mobileConn = conn;
-    el('pairStatus').textContent = '📱 Móvil conectado';
-    el('pairIndicator').textContent = '📱 Móvil conectado';
+    el('pairStatus').textContent = 'Móvil detectado, estableciendo conexión…';
+    conn.on('open', () => {
+      mobileConn = conn;
+      el('pairStatus').textContent = '📱 Móvil conectado';
+      el('pairIndicator').textContent = '📱 Móvil conectado';
+      pushState();
+    });
     conn.on('data', handleRemoteCommand);
-    conn.on('close', () => { mobileConn = null; el('pairIndicator').textContent = ''; });
-    pushState();
+    conn.on('close', () => {
+      mobileConn = null;
+      el('pairIndicator').textContent = '';
+      el('pairStatus').textContent = 'Móvil desconectado';
+    });
+    conn.on('error', () => { el('pairStatus').textContent = 'Error en la conexión con el móvil.'; });
   });
   peer.on('error', (err) => { el('pairStatus').textContent = 'Error: ' + err.type + ' (revisa la conexión a internet)'; });
 }
