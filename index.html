@@ -75,15 +75,19 @@
     position:absolute; width: clamp(38px, 4.6vw, 58px); height: clamp(38px, 4.6vw, 58px); left:0; top:0;
     border-radius: 50%; display:flex; align-items:center; justify-content:center;
     font-weight: 700; font-size: clamp(1rem, 1.6vw, 1.3rem);
-    background: var(--green); border: 2px solid var(--green-dim); color: #fff;
+    background: var(--green); border: 3px solid #fff; color: #fff;
     transform: translate(-50%,-50%);
     transition: background .2s ease, border-color .2s ease, color .2s ease, transform .2s ease, box-shadow .2s ease;
   }
-  .rosco-holder.small .letter{ width: clamp(26px, 3vw, 40px); height: clamp(26px, 3vw, 40px); font-size: clamp(.75rem, 1vw, .95rem); }
+  .rosco-holder.small .letter{ width: clamp(26px, 3vw, 40px); height: clamp(26px, 3vw, 40px); font-size: clamp(.75rem, 1vw, .95rem); border-width: 2px; }
   .letter.current{ background: var(--green-bright); border-color: #fff; color:#0b2010; transform: translate(-50%,-50%) scale(1.22); box-shadow: 0 0 0 8px rgba(34,211,238,.35); }
-  .letter.correct{ background: var(--blue); border-color: var(--blue-dim); color:#fff; }
-  .letter.wrong{ background: var(--red); border-color: var(--red-dim); color:#fff; }
-  .letter.passed{ background: transparent; border-color: var(--gold); color: var(--gold); }
+  .letter.correct{ background: var(--blue); border-color: #fff; color:#fff; }
+  .letter.wrong{ background: var(--red); border-color: #fff; color:#fff; }
+  .letter.passed{ background: var(--green); border-color: #fff; color:#fff; }
+
+  body.fullscreen-active .rosco-holder:not(.small) .letter{
+    width: clamp(52px, 5.6vw, 94px); height: clamp(52px, 5.6vw, 94px); font-size: clamp(1.2rem, 2.1vw, 2rem); border-width: 4px;
+  }
 
   .rosco-center{
     position:absolute; inset: 21%; border-radius:50%;
@@ -116,9 +120,9 @@
   .answer-panel{ margin-top: 6px; }
   .answer-row{ display:flex; gap: 14px; align-items:stretch; flex-wrap: wrap; }
   .answer-box{ flex: 1 1 320px; background: var(--bg-panel-2); border: 1px dashed var(--line); border-radius: 10px; padding: 14px 16px; min-height: 30px; font-size: 1.15rem; display:flex; align-items:center; }
-  .answer-box.correct{ border-color: var(--green); background: rgba(79,209,139,.08); }
-  .answer-box.wrong{ border-color: var(--red); background: rgba(242,100,107,.08); }
-  .answer-box.reveal{ border-color: var(--gold); background: rgba(232,179,76,.08); }
+  .answer-box.correct{ border-color: var(--blue); background: rgba(59,130,246,.12); }
+  .answer-box.wrong{ border-color: var(--red); background: rgba(239,68,68,.12); }
+  .answer-box.reveal{ border-color: var(--gold); background: rgba(232,179,76,.1); }
   .answer-box .placeholder{ color: var(--muted); font-style: italic; font-size:.9rem; }
   .verdict-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top: 12px; }
   .verdict-row button{ flex: 1 1 130px; }
@@ -161,13 +165,24 @@
   body.fullscreen-active .stage .rosco-panel{ padding: 0; min-height: 94vh; }
   body.fullscreen-active .stage .rosco-holder{ width: min(94vh, 96vw, 1500px) !important; }
   body.fullscreen-active .stage .stats-panel{
-    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
-    width: auto; background: rgba(20,29,51,.92); border-radius: 14px; padding: 10px 20px; z-index: 40;
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    width: auto; background: transparent; border: none; padding: 0; z-index: 40;
   }
-  body.fullscreen-active .stage .stats-panel .stat-grid{ grid-template-columns: repeat(4, auto); gap: 20px; }
-  body.fullscreen-active .stage .stats-panel .stat{ padding: 4px 6px; background: transparent; border: none; }
-  body.fullscreen-active .stage .stats-panel .n{ font-size: 1.15rem; }
-  body.fullscreen-active .stage .stats-panel .l{ font-size: .62rem; }
+  body.fullscreen-active .stage .stats-panel .stat-grid{ display:flex; gap: 18px; grid-template-columns: none; }
+  body.fullscreen-active .stage .stats-panel .stat{
+    width: 76px; height: 76px; border-radius: 50%; border: 3px solid #fff;
+    display:flex; align-items:center; justify-content:center; padding: 0;
+    background: var(--green);
+  }
+  body.fullscreen-active .stage .stats-panel .stat .l{ display:none; }
+  body.fullscreen-active .stage .stats-panel .stat .n{ font-size: 1.3rem; color:#fff; }
+  body.fullscreen-active .stage .stats-panel .stat.green{ background: var(--blue); }
+  body.fullscreen-active .stage .stats-panel .stat.red{ background: var(--red); }
+  body.fullscreen-active .stage .stats-panel .stat.gold{ background: var(--gold); }
+  body.fullscreen-active .stage .stats-panel .stat.neutral{ background: var(--bg-panel-2); }
+  body.fullscreen-active .stage .stats-panel .stat.time{ background: var(--cyan); color:#04222b; }
+  body.fullscreen-active .stage .stats-panel .stat.time .n{ color:#04222b; }
+  .stat.time{ display:none; }
 
   /* Modo 2 jugadores a pantalla completa: cada rosco crece todo lo posible */
   body.fullscreen-active .stage2p .rosco-panel{ padding: 10px; }
@@ -372,6 +387,7 @@ function renderStage(){
         <div class="rosco-center" id="roscoCenter-0"><div class="rc-idle">Pulsa <b>Empezar</b><br>para jugar</div></div>
       </div></div>
       <div class="panel stats-panel"><div class="stat-grid" id="stats-0">
+        <div class="stat time"><div class="n" id="stTime-0">--:--</div><div class="l">TIEMPO</div></div>
         <div class="stat green"><div class="n" id="stCorrect-0">0</div><div class="l">ACIERTOS</div></div>
         <div class="stat red"><div class="n" id="stWrong-0">0</div><div class="l">FALLOS</div></div>
         <div class="stat gold"><div class="n" id="stPass-0">0</div><div class="l">PASADAS</div></div>
@@ -387,6 +403,7 @@ function renderStage(){
           <div class="rosco-center" id="roscoCenter-${i}"><div class="rc-idle">Esperando<br>inicio</div></div>
         </div></div>
         <div class="panel stats-panel"><div class="stat-grid" id="stats-${i}">
+          <div class="stat time"><div class="n" id="stTime-${i}">--:--</div><div class="l">TIEMPO</div></div>
           <div class="stat green"><div class="n" id="stCorrect-${i}">0</div><div class="l">ACIERTOS</div></div>
           <div class="stat red"><div class="n" id="stWrong-${i}">0</div><div class="l">FALLOS</div></div>
           <div class="stat gold"><div class="n" id="stPass-${i}">0</div><div class="l">PASADAS</div></div>
@@ -610,7 +627,18 @@ function finishGame(){
 
 // ---------- Temporizador ----------
 function formatTime(s){ const m=Math.floor(s/60), sec=s%60; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
-function tick(){ timeLeft--; el('timer').textContent = formatTime(Math.max(timeLeft,0)); pushState(); if(timeLeft<=0) finishGame(); }
+function updateTimeDisplays(text){
+  el('timer').textContent = text;
+  const idxs = gameMode===2 ? [0,1] : [0];
+  idxs.forEach(i => { const b = el(`stTime-${i}`); if(b) b.textContent = text; });
+}
+
+function tick(){
+  timeLeft--;
+  updateTimeDisplays(formatTime(Math.max(timeLeft,0)));
+  pushState();
+  if(timeLeft<=0) finishGame();
+}
 
 // ---------- Botones principales ----------
 function toggleTopButtons(isRunning){
@@ -630,7 +658,7 @@ el('btnStart').addEventListener('click', () => {
   resetAllPlayers();
   refreshAllStats(); refreshAllRoscos();
   timeLeft = parseInt(el('secondsSelect').value,10);
-  el('timer').textContent = formatTime(timeLeft);
+  updateTimeDisplays(formatTime(timeLeft));
   running = true;
   toggleTopButtons(true);
   clearInterval(timerId);
@@ -658,6 +686,7 @@ el('btnRestart').addEventListener('click', () => {
   resetAllPlayers();
   el('timer').textContent = formatTime(parseInt(el('secondsSelect').value,10));
   renderStage();
+  updateTimeDisplays(formatTime(parseInt(el('secondsSelect').value,10)));
   el('answerBox').innerHTML = '<span class="placeholder">Aquí aparecerá lo que digas…</span>';
   el('micStatus').textContent = 'Micrófono inactivo';
   toggleTopButtons(false);
@@ -686,9 +715,8 @@ el('modeSelect').addEventListener('change', (e) => {
   if(gameMode===1) players = [players[0]];
   resetAllPlayers();
   renderStage();
+  updateTimeDisplays(formatTime(parseInt(el('secondsSelect').value,10)));
 });
-
-// ---------- Edición de palabras ----------
 function renderEditTabs(){
   const wrap = el('editTabs');
   if(gameMode!==2){ wrap.style.display='none'; return; }
@@ -800,13 +828,21 @@ function handleRemoteCommand(msg){
 function pushState(){
   if(!mobileConn || !mobileConn.open) return;
   const p = currentPlayer();
+  const ab = el('answerBox');
+  const isPlaceholder = !!ab.querySelector('.placeholder');
+  let answerClass = '';
+  if(ab.classList.contains('correct')) answerClass = 'correct';
+  else if(ab.classList.contains('wrong')) answerClass = 'wrong';
+  else if(ab.classList.contains('reveal')) answerClass = 'reveal';
   mobileConn.send({
     type: 'state',
     running,
     timerText: formatTime(Math.max(timeLeft,0)),
     turnLabel: gameMode===2 ? `Turno: ${p.name}` : '',
     verdictReady: !el('btnCorrect').disabled,
-    micStatus: el('micStatus').textContent
+    micStatus: el('micStatus').textContent,
+    answerText: isPlaceholder ? '' : ab.textContent,
+    answerClass
   });
 }
 
@@ -834,6 +870,7 @@ document.addEventListener('keydown', (e) => {
 // ---------- Init ----------
 renderStage();
 el('timer').textContent = formatTime(parseInt(el('secondsSelect').value,10));
+updateTimeDisplays(formatTime(parseInt(el('secondsSelect').value,10)));
 </script>
 </body>
 </html>
