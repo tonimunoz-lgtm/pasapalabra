@@ -111,7 +111,7 @@
     .game-grid { grid-template-columns: 1fr; }
   }
 
-  /* --- El Rosco (Zona Izquierda) --- */
+  /* --- El Rosco --- */
   .rosco-section {
     display: flex;
     flex-direction: column;
@@ -127,7 +127,6 @@
     margin: 20px 0;
   }
 
-  /* Letras posicionadas en círculo */
   .letter-node {
     position: absolute;
     width: 42px;
@@ -340,10 +339,8 @@
 <body>
 
 <div class="main-container">
-  <!-- Navbar Superior -->
   <div class="top-navbar">
     <div class="nav-title">Simulador del Rosco Ganador - Modo Juego</div>
-    
     <div class="nav-controls">
       <div class="nav-group">
         <label>Modo:</label>
@@ -352,12 +349,10 @@
           <option value="2" selected>2 Jugadores</option>
         </select>
       </div>
-
       <div class="nav-group">
         <label>Tiempo:</label>
         <input type="number" id="timeInput" value="150" style="width: 65px;" onchange="resetTimers()">
       </div>
-
       <button class="nav-btn secondary" onclick="openModal()">✏️ Editar palabras</button>
       <button class="nav-btn" id="btnPlayPause" onclick="togglePlay()">Empezar</button>
       <button class="nav-btn secondary" onclick="togglePauseGame()">Pausa</button>
@@ -366,10 +361,7 @@
     </div>
   </div>
 
-  <!-- Zona de Juego Central -->
   <div class="game-grid">
-    
-    <!-- Lado Izquierdo: El Rosco Activo -->
     <div class="rosco-section">
       <div class="rosco-wrapper" id="roscoWrapper">
         <div class="rosco-center-box">
@@ -378,8 +370,6 @@
           <div class="center-definition" id="centerClue">Pulsa "Empezar" para comenzar la partida.</div>
         </div>
       </div>
-
-      <!-- Control de respuestas inferior -->
       <div class="bottom-action-bar">
         <div class="input-row">
           <input type="text" class="text-input-field" id="answerInput" placeholder="Escribe y pulsa Enter (o Espacio = pasar)..." disabled>
@@ -447,7 +437,6 @@
 
 <script>
   const alphabet = ["A","B","C","D","E","F","G","H","I","J","L","M","N","Ñ","O","P","Q","R","S","T","U","V","X","Y","Z"];
-  
   let defaultWords = [];
   
   function loadInitialDefaultWords() {
@@ -657,29 +646,31 @@
   }
 
   function updateScoreboardUI() {
-    [1, 2].forEach(p => {
-      if (!playersData[p]) return;
-      const timeElem = document.getElementById(`p${p}Time`);
-      if (timeElem) timeElem.innerText = formatTime(playersData[p].time);
+    const targetPlayers =;
+    targetPlayers.forEach(p => {
+      if (!playersData[p] || !playersData[p].states) return;
+      
+      const timeEl = document.getElementById(`p${p}Time`);
+      if (timeEl) timeEl.innerText = formatTime(playersData[p].time);
       
       let ok = 0, fail = 0, pass = 0, rest = 0;
       alphabet.forEach(l => {
-        const st = playersData[p].states[l];
+ const st = playersData[p].states[l];
         if (st === 'correct') ok++;
         else if (st === 'wrong') fail++;
         else if (st === 'passed') pass++;
         else rest++;
       });
 
-      const okElem = document.getElementById(`p${p}-ok`);
-      const failElem = document.getElementById(`p${p}-fail`);
-      const passElem = document.getElementById(`p${p}-pass`);
-      const restElem = document.getElementById(`p${p}-rest`);
+      const okEl = document.getElementById(`p${p}-ok`);
+      const failEl = document.getElementById(`p${p}-fail`);
+      const passEl = document.getElementById(`p${p}-pass`);
+      const restEl = document.getElementById(`p${p}-rest`);
 
-      if (okElem) okElem.innerText = ok;
-      if (failElem) failElem.innerText = fail;
-      if (passElem) passElem.innerText = pass;
-      if (restElem) restElem.innerText = rest;
+      if (okEl) okEl.innerText = ok;
+      if (failEl) failEl.innerText = fail;
+      if (passEl) passEl.innerText = pass;
+      if (restEl) restEl.innerText = rest;
     });
   }
 
