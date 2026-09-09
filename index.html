@@ -258,7 +258,7 @@
 <div class="modal-backdrop" id="linkBackdrop">
   <div class="modal">
     <h2>Vincular móvil</h2>
-    <div class="edit-help">Abre <b>controls.html</b> en el navegador del móvil (misma carpeta / mismo dominio que esta página) e introduce este código. Ambos dispositivos necesitan conexión a internet.</div>
+    <div class="edit-help">Abre <b>controls.html</b> en el móvil del presentador (para los controles) y/o <b>camera.html</b> en el móvil del trípode (para grabar al jugador). Ambos usan este mismo código, cada uno conecta por separado. Los dos dispositivos necesitan conexión a internet.</div>
     <div class="paircode" id="pairCodeDisplay">----</div>
     <div class="mic-status" id="pairStatus" style="text-align:center;">Generando código…</div>
     <div class="edit-actions"><button id="btnCloseLink" class="ghost">Cerrar</button></div>
@@ -754,8 +754,8 @@ function openLinkModal(){
     el('pairStatus').textContent = 'Móvil detectado, estableciendo conexión…';
     conn.on('open', () => {
       mobileConn = conn;
-      el('pairStatus').textContent = '📱 Móvil conectado';
-      el('pairIndicator').textContent = '📱 Móvil conectado';
+      el('pairStatus').textContent = '📱 Mando conectado';
+      el('pairIndicator').textContent = '📱 Mando conectado';
       pushState();
     });
     conn.on('data', handleRemoteCommand);
