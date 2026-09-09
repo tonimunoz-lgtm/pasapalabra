@@ -579,43 +579,60 @@ function doReveal(){
 }
 
 // ---------- Acciones de turno ----------
-function doCorrect(){ if(!running) return; const p=currentPlayer(); p.words[p.idx].status='correct'; p.correct++; advance(true); }
-function doWrong(){ if(!running) return; const p=currentPlayer(); p.words[p.idx].status='wrong'; p.wrong++; advance(false); }
-function doPass(){ if(!running) return; const p=currentPlayer(); if(p.words[p.idx].status==='pending'){ p.words[p.idx].status='passed'; p.pass++; } advance(false); }
+function doCorrect(){ if(!running) return; const p=currentPlayer(); p.words[p.idx].status='correct'; p.correct++; advance(true, false); }
+function doWrong(){ if(!running) return; const p=currentPlayer(); p.words[p.idx].status='wrong'; p.wrong++; advance(false, false); }
+function doPass(){ if(!running) return; const p=currentPlayer(); if(p.words[p.idx].status==='pending'){ p.words[p.idx].status='passed'; p.pass++; } advance(false, true); }
 
-function advance(keepTurn){
+function pauseGame(){
+  running = false;
+  clearInterval(timerId);
+  window.speechSynthesis.cancel();
+  stopListening();
+  el('btnPause').textContent = '▶ Reanudar';
+  el('micStatus').textContent = 'En pausa';
+  pushState();
+}
+
+function advance(keepTurn, pauseAfter){
   refreshAllStats(); refreshAllRoscos();
   stopListening();
   const p = currentPlayer();
   const nextOwn = nextPendingIndex(p, p.idx);
 
+  function land(targetActive, targetIdx){
+    active = targetActive;
+    players[targetActive].idx = targetIdx;
+    refreshAllRoscos();
+    if(pauseAfter){
+      const center = el(`roscoCenter-${active}`);
+      if(center) center.innerHTML = '<div class="rc-idle">En pausa<br>Pulsa Reanudar<br>para la siguiente</div>';
+      pauseGame();
+    } else {
+      setTimeout(startTurn, 500);
+    }
+  }
+
   if(gameMode === 1){
     if(nextOwn === -1){ finishGame(); return; }
-    p.idx = nextOwn;
-    setTimeout(startTurn, 500);
+    land(active, nextOwn);
     return;
   }
 
   // modo 2 jugadores
   if(keepTurn){
-    if(nextOwn !== -1){ p.idx = nextOwn; setTimeout(startTurn, 500); return; }
+    if(nextOwn !== -1){ land(active, nextOwn); return; }
     const otherIdx = 1-active;
     if(hasPending(players[otherIdx])){
-      active = otherIdx;
-      const np = currentPlayer();
-      np.idx = nextPendingIndex(np, np.idx);
-      setTimeout(startTurn, 500);
+      const np = players[otherIdx];
+      land(otherIdx, nextPendingIndex(np, np.idx));
     } else finishGame();
   } else {
     const otherIdx = 1-active;
     if(hasPending(players[otherIdx])){
-      active = otherIdx;
-      const np = currentPlayer();
-      np.idx = nextPendingIndex(np, np.idx);
-      setTimeout(startTurn, 500);
+      const np = players[otherIdx];
+      land(otherIdx, nextPendingIndex(np, np.idx));
     } else if(nextOwn !== -1){
-      p.idx = nextOwn;
-      setTimeout(startTurn, 500);
+      land(active, nextOwn);
     } else finishGame();
   }
 }
@@ -689,16 +706,13 @@ el('btnStart').addEventListener('click', () => {
 
 el('btnPause').addEventListener('click', () => {
   if(running){
-    running = false; clearInterval(timerId); window.speechSynthesis.cancel();
-    stopListening();
-    el('btnPause').textContent = '▶ Reanudar';
-    el('micStatus').textContent = 'En pausa';
+    pauseGame();
   } else {
     running = true; timerId = setInterval(tick, 1000);
     el('btnPause').textContent = '⏸ Pausa';
     startTurn();
+    pushState();
   }
-  pushState();
 });
 
 el('btnRestart').addEventListener('click', () => {
