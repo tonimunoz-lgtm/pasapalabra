@@ -176,7 +176,7 @@
     position: fixed; bottom: 24px; left: 24px; transform: none;
     width: auto; background: transparent; border: none; padding: 0; z-index: 40;
   }
-  body.fullscreen-active .stage .stats-panel .stat-grid{ display:flex; gap: 18px; grid-template-columns: none; }
+  body.fullscreen-active .stage .stats-panel .stat-grid{ display:flex; gap: 18px; grid-template-columns: none; align-items: center; }
   body.fullscreen-active .stage .stats-panel .stat{
     width: 76px; height: 76px; border-radius: 50%; border: 3px solid #fff;
     display:flex; align-items:center; justify-content:center; padding: 0;
@@ -188,8 +188,8 @@
   body.fullscreen-active .stage .stats-panel .stat.red{ background: var(--red); }
   body.fullscreen-active .stage .stats-panel .stat.gold{ background: var(--gold); }
   body.fullscreen-active .stage .stats-panel .stat.neutral{ background: var(--bg-panel-2); }
-  body.fullscreen-active .stage .stats-panel .stat.time{ background: var(--cyan); color:#04222b; }
-  body.fullscreen-active .stage .stats-panel .stat.time .n{ color:#04222b; }
+  body.fullscreen-active .stage .stats-panel .stat.time{ background: var(--cyan); color:#04222b; width: 152px; height: 152px; border-width: 5px; }
+  body.fullscreen-active .stage .stats-panel .stat.time .n{ color:#04222b; font-size: 2.2rem; }
   .stat.time{ display:none; }
 
   /* Modo 2 jugadores a pantalla completa: cada rosco crece todo lo posible */
