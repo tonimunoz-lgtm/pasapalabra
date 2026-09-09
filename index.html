@@ -144,6 +144,7 @@
   }
   .answer-box.correct{ border-color: var(--green); background: rgba(79,209,139,.08); }
   .answer-box.wrong{ border-color: var(--red); background: rgba(242,100,107,.08); }
+  .answer-box.reveal{ border-color: var(--gold); background: rgba(232,179,76,.08); }
   .answer-box .placeholder{ color: var(--muted); font-style: italic; font-size:.9rem; }
 
   .verdict-row{ display:flex; gap:10px; flex-wrap:wrap; }
@@ -216,6 +217,7 @@
         <div><b>Enter</b> = correcta</div>
         <div><b>X</b> = incorrecta</div>
         <div><b>Espacio</b> = pasapalabra</div>
+        <div><b>S</b> = ver respuesta</div>
         <div><b>Ctrl+R</b> = reiniciar</div>
         <div style="margin-top:6px;">Requiere Chrome o Edge + micrófono.</div>
       </div>
@@ -231,6 +233,7 @@
       <button id="btnWrong" class="danger" disabled>✘ Incorrecta (X)</button>
       <button id="btnPass" class="ghost" disabled>⏭ Pasapalabra (Espacio)</button>
       <button id="btnRepeat" class="ghost" disabled>🔊 Repetir pregunta</button>
+      <button id="btnSolution" class="ghost" disabled>👁 Ver respuesta</button>
     </div>
   </div>
 
@@ -454,6 +457,18 @@ function setVerdictButtons(enabled){
   el('btnWrong').disabled = !enabled;
   el('btnPass').disabled = !running;
   el('btnRepeat').disabled = !running;
+  el('btnSolution').disabled = !running;
+}
+
+function doReveal(){
+  if(!running) return;
+  const w = words[idx];
+  el('answerBox').className = 'answer-box reveal';
+  el('answerBox').textContent = `Respuesta correcta: ${w.answer}`;
+  const rc = el('rcStatus');
+  if(rc) rc.textContent = 'Solución revelada';
+  el('btnCorrect').disabled = false;
+  el('btnWrong').disabled = false;
 }
 
 // ---------- Acciones de turno ----------
@@ -544,6 +559,7 @@ el('btnRepeat').addEventListener('click', () => {
   if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
   speak(`${w.letter}. ${w.clue}`, () => { if(running) startListening(); });
 });
+el('btnSolution').addEventListener('click', doReveal);
 
 // ---------- Edición de palabras ----------
 el('btnEdit').addEventListener('click', () => {
@@ -566,6 +582,7 @@ document.addEventListener('keydown', (e) => {
   if(e.key === 'Enter' && !el('btnCorrect').disabled) doCorrect();
   else if((e.key === 'x' || e.key === 'X') && !el('btnWrong').disabled) doWrong();
   else if(e.key === ' ' && running){ e.preventDefault(); doPass(); }
+  else if((e.key === 's' || e.key === 'S') && running && !e.ctrlKey){ doReveal(); }
   else if(e.ctrlKey && (e.key === 'r' || e.key === 'R')){ e.preventDefault(); el('btnRestart').click(); }
 });
 
