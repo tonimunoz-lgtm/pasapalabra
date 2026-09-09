@@ -60,7 +60,6 @@
     font-weight: 600;
     color: var(--text-white);
   }
-  .nav-title span { color: var(--text-muted); font-weight: normal; font-size: 0.8rem; }
 
   .nav-controls {
     display: flex;
@@ -99,7 +98,6 @@
   }
   .nav-btn:hover { opacity: 0.9; transform: translateY(-1px); }
   .nav-btn.secondary { background: var(--panel-blue); color: var(--text-white); border: 1px solid var(--panel-border); }
-  .nav-btn.danger { background: var(--red-btn); color: white; }
 
   /* --- Distribución en Pantalla --- */
   .game-grid {
@@ -129,7 +127,7 @@
     margin: 20px 0;
   }
 
-  /* Letras posicionadas en círculo dinámicamente */
+  /* Letras posicionadas en círculo */
   .letter-node {
     position: absolute;
     width: 42px;
@@ -146,9 +144,6 @@
     transform: translate(-50%, -50%);
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     transition: all 0.3s ease;
-  }
-  .letter-node.active-turn {
-    box-shadow: 0 0 15px #3b82f6, inset 0 0 8px #ffffff;
   }
   .letter-node.current {
     background: #ffffff !important;
@@ -287,7 +282,6 @@
     border: 1px solid var(--panel-border);
     border-radius: 6px;
     padding: 12px 16px;
-    color: #white;
     font-size: 0.95rem;
     color: white;
     outline: none;
@@ -348,7 +342,7 @@
 <div class="main-container">
   <!-- Navbar Superior -->
   <div class="top-navbar">
-    <div class="nav-title">Simulador del Rosco Ganador <span>- Modo Juego</span></div>
+    <div class="nav-title">Simulador del Rosco Ganador - Modo Juego</div>
     
     <div class="nav-controls">
       <div class="nav-group">
@@ -383,6 +377,10 @@
           <div class="center-big-letter" id="centerLetter">-</div>
           <div class="center-definition" id="centerClue">Pulsa "Empezar" para comenzar la partida.</div>
         </div>
-        <!-- Los nodos de letras se generan aquí por JS -->
       </div>
 
+      <!-- Control de respuestas inferior -->
+      <div class="bottom-action-bar">
+        <div class="input-row">
+          <input type="text" class="text-input-field" id="answerInput" placeholder="Escribe y pulsa Enter (o Espacio = pasar)..." disabled>
+          <button class="action-btn ok" onclick="checkAnswer(true)">OK</button>
