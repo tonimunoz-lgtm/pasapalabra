@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Cámara · Rosco con voz</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+  :root{
+    --bg-panel: #141d33; --bg-panel-2: #1b2540;
+    --gold: #e8b34c; --cream: #f4ecd8; --muted: #8a93ab;
+    --green: #22c55e; --red: #ef4444; --line: #2a3555;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  body{
+    margin:0; min-height:100vh;
+    background: linear-gradient(160deg, #1e6fd9 0%, #0b2a63 55%, #04102b 100%);
+    color: var(--cream); padding: 20px 16px 40px;
+  }
+  h1{ font-size: 1.2rem; text-align:center; margin: 6px 0 4px; }
+  h1 span{ color: var(--gold); }
+  .sub{ text-align:center; color: var(--muted); font-size: .82rem; margin-bottom: 22px; }
+
+  .panel{ background: rgba(11,32,74,.6); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:18px; }
+
+  #pairScreen{ max-width: 360px; margin: 40px auto 0; text-align:center; }
+  #codeInput{
+    width:100%; font-size: 2rem; text-align:center; letter-spacing:.2em;
+    background: var(--bg-panel-2); color: var(--cream); border:1px solid var(--line);
+    border-radius: 10px; padding: 14px; margin-bottom: 14px;
+  }
+  #connStatus{ margin-top: 12px; font-size: .85rem; color: var(--muted); min-height: 1.4em; }
+
+  button{
+    font: inherit; font-weight:700; font-size: 1rem;
+    border: 1px solid var(--line); background: var(--bg-panel-2); color: var(--cream);
+    padding: 16px; border-radius: 12px; cursor:pointer; width:100%;
+  }
+  button.primary{ background: var(--gold); color:#231705; border-color: var(--gold); }
+  button.danger{ background: transparent; color: var(--red); border-color: var(--red); }
+  button:active{ transform: scale(.97); }
+
+  #camScreen{ display:none; max-width: 480px; margin: 0 auto; text-align:center; }
+  #camStatus{ font-size: .9rem; color: var(--green); font-weight:700; margin: 10px 0 14px; }
+  video{ width:100%; border-radius: 14px; background:#000; display:block; margin-bottom: 14px; }
+  .row{ display:flex; gap:10px; }
+  .tip{ font-size:.75rem; color: var(--muted); margin-top: 14px; line-height:1.5; }
+</style>
+</head>
+<body>
+  <h1>Cámara <span>Rosco con voz</span></h1>
+  <p class="sub">Coloca el móvil en el trípode enfocando al jugador</p>
+
+  <div id="pairScreen" class="panel">
+    <input id="codeInput" maxlength="4" inputmode="numeric" placeholder="0000">
+    <button id="btnConnect" class="primary">Conectar y empezar a grabar</button>
+    <div id="connStatus"></div>
+    <div style="margin-top:14px; font-size:.75rem; color:var(--muted);">Usa el mismo código de 4 cifras que el mando del presentador. Ambos móviles se conectan por separado al ordenador.</div>
+  </div>
+
+  <div id="camScreen">
+    <div class="panel">
+      <div id="camStatus">Enviando imagen a la pantalla principal…</div>
+      <video id="localPreview" autoplay playsinline muted></video>
+      <div class="row">
+        <button id="btnFlip">🔄 Cambiar cámara</button>
+        <button id="btnStop" class="danger">⏹ Detener</button>
+      </div>
+      <p class="tip">Deja el móvil enchufado o con batería suficiente: la pantalla se mantiene encendida mientras grabas. Si cierras esta pestaña o el móvil se bloquea, se corta el envío.</p>
+    </div>
+  </div>
+
+<script>
+const el = (id) => document.getElementById(id);
+let peer = null, call = null, stream = null, hostId = null, facing = 'environment', wakeLock = null;
+
+const ICE_CONFIG = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+  ]
+};
+
+async function requestWakeLock(){
+  try{ wakeLock = await navigator.wakeLock?.request('screen'); }catch(e){ /* no soportado, ignorar */ }
+}
+
+async function startCamera(){
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: false });
+  }catch(e){
+    el('connStatus').textContent = 'No se ha podido acceder a la cámara. Revisa los permisos del navegador.';
+    el('btnConnect').disabled = false;
+    return false;
+  }
+  el('localPreview').srcObject = stream;
+  return true;
+}
+
+el('btnConnect').addEventListener('click', async () => {
+  const code = el('codeInput').value.trim();
+  if(code.length !== 4){ el('connStatus').textContent = 'Introduce el código de 4 cifras.'; return; }
+  el('btnConnect').disabled = true;
+  el('connStatus').textContent = 'Activando cámara…';
+
+  const ok = await startCamera();
+  if(!ok) return;
+
+  el('connStatus').textContent = 'Conectando con la pantalla principal…';
+  if(peer){ try{ peer.destroy(); }catch(e){} }
+
+  const openTimeout = setTimeout(() => {
+    el('connStatus').textContent = 'No se pudo conectar. Prueba a poner el móvil en la misma red Wi-Fi que el ordenador.';
+    el('btnConnect').disabled = false;
+    if(peer){ try{ peer.destroy(); }catch(e){} }
+  }, 12000);
+
+  peer = new Peer(undefined, { config: ICE_CONFIG });
+  peer.on('open', () => {
+    hostId = 'rosco-'+code;
+    call = peer.call(hostId, stream);
+    call.on('stream', () => {}); // no necesitamos vídeo de vuelta
+    clearTimeout(openTimeout);
+    el('pairScreen').style.display = 'none';
+    el('camScreen').style.display = 'block';
+    requestWakeLock();
+  });
+  peer.on('error', (e) => {
+    clearTimeout(openTimeout);
+    el('connStatus').textContent = 'Error de red (' + e.type + ').';
+    el('btnConnect').disabled = false;
+  });
+});
+
+el('btnFlip').addEventListener('click', async () => {
+  facing = facing === 'environment' ? 'user' : 'environment';
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  const ok = await startCamera();
+  if(ok && call && peer){
+    // Sustituye la pista de vídeo en la llamada activa
+    const sender = call.peerConnection?.getSenders?.().find(s => s.track && s.track.kind === 'video');
+    const newTrack = stream.getVideoTracks()[0];
+    if(sender && newTrack) sender.replaceTrack(newTrack);
+  }
+});
+
+el('btnStop').addEventListener('click', () => {
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  if(call) call.close();
+  if(peer) peer.destroy();
+  wakeLock?.release?.();
+  location.reload();
+});
+</script>
+</body>
+</html>
