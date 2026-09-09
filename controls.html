@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Mando · Rosco con voz</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+  :root{
+    --bg: #0e1526; --bg-panel: #141d33; --bg-panel-2: #1b2540;
+    --gold: #e8b34c; --gold-dim: #a97f2f; --cream: #f4ecd8; --muted: #8a93ab;
+    --green: #4fd18b; --red: #f2646b; --line: #2a3555;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  body{ margin:0; min-height:100vh; background: radial-gradient(1000px 700px at 50% -10%, #1a2544 0%, var(--bg) 60%); color: var(--cream); padding: 20px 16px 40px; }
+  h1{ font-size: 1.2rem; text-align:center; margin: 6px 0 4px; }
+  h1 span{ color: var(--gold); }
+  .sub{ text-align:center; color: var(--muted); font-size: .82rem; margin-bottom: 22px; }
+
+  .panel{ background: var(--bg-panel); border:1px solid var(--line); border-radius:14px; padding:18px; }
+
+  #pairScreen{ max-width: 360px; margin: 40px auto 0; text-align:center; }
+  #codeInput{
+    width:100%; font-size: 2rem; text-align:center; letter-spacing:.2em;
+    background: var(--bg-panel-2); color: var(--cream); border:1px solid var(--line);
+    border-radius: 10px; padding: 14px; margin-bottom: 14px;
+  }
+  #connStatus{ margin-top: 12px; font-size: .85rem; color: var(--muted); min-height: 1.4em; }
+
+  button{
+    font: inherit; font-weight:700; font-size: 1rem;
+    border: 1px solid var(--line); background: var(--bg-panel-2); color: var(--cream);
+    padding: 16px; border-radius: 12px; cursor:pointer; width:100%;
+  }
+  button.primary{ background: var(--gold); color:#231705; border-color: var(--gold); }
+  button.danger{ background: transparent; color: var(--red); border-color: var(--red); }
+  button:disabled{ opacity:.35; }
+  button:active{ transform: scale(.97); }
+
+  #controlScreen{ max-width: 480px; margin: 0 auto; display:none; }
+  .mTimer{ text-align:center; font-size: 2.6rem; font-weight:800; color: var(--gold); font-variant-numeric: tabular-nums; }
+  .mTurn{ text-align:center; color: var(--gold); font-weight:700; margin-bottom: 14px; min-height: 1.3em; }
+  .micline{ text-align:center; color: var(--muted); font-size:.8rem; margin-bottom: 18px; min-height: 1.2em; }
+  .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .grid.full{ grid-template-columns: 1fr; }
+
+  #editOverlay{ display:none; position:fixed; inset:0; background: rgba(6,9,18,.9); padding: 20px; z-index: 50; }
+  #editOverlay textarea{ width:100%; min-height: 50vh; background: var(--bg-panel-2); color: var(--cream); border:1px solid var(--line); border-radius:10px; padding:12px; font: 13px/1.5 monospace; margin-bottom: 12px; }
+  #editOverlay .row{ display:flex; gap:10px; }
+</style>
+</head>
+<body>
+  <h1>Mando <span>Rosco con voz</span></h1>
+  <p class="sub">Introduce el código que aparece en la pantalla principal</p>
+
+  <div id="pairScreen" class="panel">
+    <input id="codeInput" maxlength="4" inputmode="numeric" placeholder="0000">
+    <button id="btnConnect" class="primary">Conectar</button>
+    <div id="connStatus"></div>
+  </div>
+
+  <div id="controlScreen">
+    <div class="panel" style="margin-bottom:14px;">
+      <div class="mTimer" id="mTimer">00:00</div>
+      <div class="mTurn" id="mTurn"></div>
+      <div class="micline" id="mMic"></div>
+    </div>
+
+    <div class="grid">
+      <button id="mStart" class="primary">▶ Empezar</button>
+      <button id="mPause">⏸ Pausa</button>
+    </div>
+    <div class="grid">
+      <button id="mEdit">✏️ Editar palabras</button>
+      <button id="mRestart" class="danger">↻ Reiniciar</button>
+    </div>
+
+    <div class="grid">
+      <button id="mCorrect" class="primary" disabled>✔ Correcta</button>
+      <button id="mWrong" class="danger" disabled>✘ Incorrecta</button>
+    </div>
+    <div class="grid">
+      <button id="mPass">⏭ Pasapalabra</button>
+      <button id="mRepeat">🔊 Repetir</button>
+    </div>
+    <div class="grid full">
+      <button id="mReveal">👁 Ver respuesta</button>
+    </div>
+  </div>
+
+  <div id="editOverlay">
+    <p style="color:var(--muted); font-size:.82rem;">Formato: LETRA|PREGUNTA|RESPUESTA (una línea por letra). Se aplicará al jugador que tenga el turno ahora mismo. Solo funciona si la partida no está en marcha.</p>
+    <textarea id="mWordsArea"></textarea>
+    <div class="row">
+      <button id="mCancelWords">Cancelar</button>
+      <button id="mSaveWords" class="primary">Enviar al rosco</button>
+    </div>
+  </div>
+
+<script>
+const el = (id) => document.getElementById(id);
+let peer = null, conn = null;
+
+el('btnConnect').addEventListener('click', () => {
+  const code = el('codeInput').value.trim();
+  if(code.length !== 4){ el('connStatus').textContent = 'Introduce el código de 4 cifras.'; return; }
+  el('connStatus').textContent = 'Conectando…';
+  peer = new Peer();
+  peer.on('open', () => {
+    conn = peer.connect('rosco-'+code, { reliable: true });
+    conn.on('open', () => {
+      el('pairScreen').style.display = 'none';
+      el('controlScreen').style.display = 'block';
+    });
+    conn.on('data', updateFromHost);
+    conn.on('close', () => {
+      alert('Se perdió la conexión con la pantalla principal.');
+      location.reload();
+    });
+    conn.on('error', () => { el('connStatus').textContent = 'No se ha podido conectar. Revisa el código.'; });
+  });
+  peer.on('error', () => { el('connStatus').textContent = 'Error de red. Revisa que ambos dispositivos tengan internet.'; });
+});
+
+function send(obj){ if(conn && conn.open) conn.send(obj); }
+
+el('mStart').addEventListener('click', () => send({type:'start'}));
+el('mPause').addEventListener('click', () => send({type:'pause'}));
+el('mRestart').addEventListener('click', () => { if(confirm('¿Reiniciar la partida?')) send({type:'restart'}); });
+el('mCorrect').addEventListener('click', () => send({type:'correct'}));
+el('mWrong').addEventListener('click', () => send({type:'wrong'}));
+el('mPass').addEventListener('click', () => send({type:'pass'}));
+el('mRepeat').addEventListener('click', () => send({type:'repeat'}));
+el('mReveal').addEventListener('click', () => send({type:'reveal'}));
+
+el('mEdit').addEventListener('click', () => { el('editOverlay').style.display = 'block'; });
+el('mCancelWords').addEventListener('click', () => { el('editOverlay').style.display = 'none'; });
+el('mSaveWords').addEventListener('click', () => {
+  send({type:'setWords', text: el('mWordsArea').value});
+  el('editOverlay').style.display = 'none';
+});
+
+function updateFromHost(state){
+  if(!state || state.type !== 'state') return;
+  el('mTimer').textContent = state.timerText || '00:00';
+  el('mTurn').textContent = state.turnLabel || '';
+  el('mMic').textContent = state.micStatus || '';
+  el('mCorrect').disabled = !state.verdictReady;
+  el('mWrong').disabled = !state.verdictReady;
+  el('mStart').disabled = state.running;
+  el('mPause').disabled = !state.running;
+}
+</script>
+</body>
+</html>
