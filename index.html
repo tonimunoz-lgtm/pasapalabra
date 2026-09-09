@@ -944,6 +944,7 @@ function pushState(){
   if(ab.classList.contains('correct')) answerClass = 'correct';
   else if(ab.classList.contains('wrong')) answerClass = 'wrong';
   else if(ab.classList.contains('reveal')) answerClass = 'reveal';
+  const rc = el('rcStatus');
   mobileConn.send({
     type: 'state',
     running,
@@ -952,7 +953,8 @@ function pushState(){
     verdictReady: !el('btnCorrect').disabled,
     micStatus: el('micStatus').textContent,
     answerText: isPlaceholder ? '' : ab.textContent,
-    answerClass
+    answerClass,
+    verdictText: rc ? rc.textContent : ''
   });
 }
 
