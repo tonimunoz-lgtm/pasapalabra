@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Rosco con voz</title>
+<style>
+  :root{
+    --bg: #0e1526;
+    --bg-panel: #141d33;
+    --bg-panel-2: #1b2540;
+    --gold: #e8b34c;
+    --gold-dim: #a97f2f;
+    --cream: #f4ecd8;
+    --muted: #8a93ab;
+    --green: #4fd18b;
+    --red: #f2646b;
+    --line: #2a3555;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    background: radial-gradient(1200px 700px at 50% -10%, #1a2544 0%, var(--bg) 60%);
+    color: var(--cream);
+    min-height:100vh;
+    padding: 28px 16px 60px;
+  }
+  .wrap{ max-width: 920px; margin: 0 auto; }
+  header{ text-align:center; margin-bottom: 22px; }
+  header h1{
+    font-size: 1.5rem;
+    letter-spacing: .02em;
+    margin: 0 0 4px;
+    font-weight: 700;
+  }
+  header h1 span{ color: var(--gold); }
+  header p{ margin:0; color: var(--muted); font-size: .85rem; }
+
+  .panel{
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 18px;
+  }
+
+  .controls{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; }
+  button{
+    font: inherit;
+    font-weight: 600;
+    font-size: .85rem;
+    border: 1px solid var(--line);
+    background: var(--bg-panel-2);
+    color: var(--cream);
+    padding: 10px 16px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: transform .08s ease, background .15s ease, border-color .15s ease;
+  }
+  button:hover{ border-color: var(--gold-dim); }
+  button:active{ transform: scale(.96); }
+  button:disabled{ opacity:.35; cursor:not-allowed; }
+  button.primary{ background: var(--gold); color:#231705; border-color: var(--gold); }
+  button.primary:hover{ background:#f0c265; }
+  button.danger{ background: transparent; color: var(--red); border-color: var(--red); }
+  button.ghost{ background: transparent; }
+
+  .timer{
+    font-variant-numeric: tabular-nums;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--gold);
+    min-width: 84px;
+    text-align:center;
+  }
+  select, input[type=number]{
+    font: inherit; background: var(--bg-panel-2); color: var(--cream);
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+  }
+
+  .stage{
+    display:grid;
+    grid-template-columns: 340px 1fr;
+    gap: 22px;
+    align-items: start;
+  }
+  @media (max-width: 760px){ .stage{ grid-template-columns: 1fr; } }
+
+  .rosco-holder{ position:relative; width: 320px; height: 320px; margin: 0 auto; }
+  .letter{
+    position:absolute; width: 38px; height: 38px; border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    font-weight: 700; font-size: .95rem;
+    background: var(--bg-panel-2); border: 2px solid var(--line);
+    color: var(--muted);
+    transition: all .2s ease;
+  }
+  .letter.current{
+    background: var(--gold); border-color: var(--gold); color:#231705;
+    transform: scale(1.18);
+    box-shadow: 0 0 0 6px rgba(232,179,76,.18);
+  }
+  .letter.correct{ background: var(--green); border-color: var(--green); color:#082818; }
+  .letter.wrong{ background: var(--red); border-color: var(--red); color:#2b0508; }
+  .letter.passed{ border-color: var(--gold-dim); color: var(--gold-dim); }
+  .rosco-center{
+    position:absolute; inset: 76px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--bg-panel); border: 1px solid var(--line);
+    text-align:center; padding: 10px; font-size: .78rem; color: var(--muted);
+  }
+
+  .score{ text-align:center; margin-top: 12px; font-size:.8rem; color: var(--muted); }
+  .score b{ color: var(--cream); }
+
+  .clue-box{ min-height: 90px; }
+  .clue-label{ font-size:.72rem; letter-spacing:.04em; color: var(--gold-dim); margin-bottom:6px; }
+  .clue-text{ font-size: 1.15rem; line-height:1.5; }
+  .clue-text b{ color: var(--gold); }
+
+  .mic-row{ display:flex; align-items:center; gap:10px; margin: 14px 0 6px; }
+  .mic-dot{
+    width: 12px; height:12px; border-radius:50%; background: var(--line); flex-shrink:0;
+  }
+  .mic-dot.listening{ background: var(--red); box-shadow: 0 0 0 0 rgba(242,100,107,.5); animation: pulse 1.2s infinite; }
+  @keyframes pulse{
+    0%{ box-shadow: 0 0 0 0 rgba(242,100,107,.5); }
+    70%{ box-shadow: 0 0 0 10px rgba(242,100,107,0); }
+    100%{ box-shadow: 0 0 0 0 rgba(242,100,107,0); }
+  }
+  .mic-status{ font-size: .82rem; color: var(--muted); }
+
+  .answer-box{
+    background: var(--bg-panel-2); border: 1px dashed var(--line);
+    border-radius: 10px; padding: 12px 14px; min-height: 46px;
+    font-size: 1.05rem; margin: 6px 0 14px;
+  }
+  .answer-box.correct{ border-color: var(--green); background: rgba(79,209,139,.08); }
+  .answer-box.wrong{ border-color: var(--red); background: rgba(242,100,107,.08); }
+  .answer-box .placeholder{ color: var(--muted); font-style: italic; font-size:.9rem; }
+
+  .verdict-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .verdict-row button{ flex:1; min-width: 120px; }
+
+  textarea{
+    width:100%; min-height: 220px; background: var(--bg-panel-2); color: var(--cream);
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px; font: 13px/1.5 monospace;
+    resize: vertical;
+  }
+  .edit-help{ font-size:.78rem; color: var(--muted); margin: 6px 0 10px; }
+  .edit-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top: 10px; }
+
+  .hint{ text-align:center; color: var(--muted); font-size:.75rem; margin-top: 16px; }
+  .modal-backdrop{
+    position:fixed; inset:0; background: rgba(6,9,18,.72); display:none;
+    align-items:center; justify-content:center; padding: 20px; z-index: 50;
+  }
+  .modal-backdrop.open{ display:flex; }
+  .modal{ background: var(--bg-panel); border:1px solid var(--line); border-radius:14px; padding:20px; max-width: 640px; width:100%; }
+  .modal h2{ margin-top:0; font-size:1.05rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Rosco <span>con voz</span></h1>
+    <p>La IA lee la pregunta y escucha tu respuesta &middot; tú solo confirmas</p>
+  </header>
+
+  <div class="panel controls">
+    <button id="btnEdit" class="ghost">✏️ Editar palabras</button>
+    <button id="btnStart" class="primary">▶ Empezar</button>
+    <button id="btnPause" disabled>⏸ Pausa</button>
+    <button id="btnRestart" class="danger">↻ Reiniciar</button>
+    <div class="timer" id="timer">02:00</div>
+    <select id="secondsSelect">
+      <option value="120">2:00 min</option>
+      <option value="150" selected>2:30 min</option>
+      <option value="180">3:00 min</option>
+      <option value="240">4:00 min</option>
+    </select>
+  </div>
+
+  <div class="stage">
+    <div class="panel">
+      <div class="rosco-holder" id="rosco">
+        <div class="rosco-center" id="roscoCenter">Pulsa <b>Empezar</b><br>para jugar</div>
+      </div>
+      <div class="score" id="scoreLine">Aciertos: <b>0</b> · Fallos: <b>0</b> · Pasadas: <b>0</b></div>
+    </div>
+
+    <div class="panel">
+      <div class="clue-box">
+        <div class="clue-label">PREGUNTA</div>
+        <div class="clue-text" id="clueText">Edita las palabras o pulsa Empezar para usar la lista de ejemplo.</div>
+      </div>
+
+      <div class="mic-row">
+        <div class="mic-dot" id="micDot"></div>
+        <div class="mic-status" id="micStatus">Micrófono inactivo</div>
+      </div>
+
+      <div class="answer-box" id="answerBox"><span class="placeholder">Aquí aparecerá lo que digas…</span></div>
+
+      <div class="verdict-row">
+        <button id="btnCorrect" class="primary" disabled>✔ Correcta (Enter)</button>
+        <button id="btnWrong" class="danger" disabled>✘ Incorrecta (X)</button>
+        <button id="btnPass" class="ghost" disabled>⏭ Pasapalabra (Espacio)</button>
+        <button id="btnRepeat" class="ghost" disabled>🔊 Repetir pregunta</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="hint">Atajos: Enter = correcta &middot; X = incorrecta &middot; Espacio = pasapalabra &middot; Ctrl+R = reiniciar. Requiere Chrome o Edge y micrófono.</p>
+</div>
+
+<div class="modal-backdrop" id="editBackdrop">
+  <div class="modal">
+    <h2>Editar palabras del rosco</h2>
+    <div class="edit-help">Una línea por letra, formato: <b>LETRA|PREGUNTA|RESPUESTA</b>. Las líneas mal escritas se ignoran.</div>
+    <textarea id="wordsArea"></textarea>
+    <div class="edit-actions">
+      <button id="btnCancelEdit" class="ghost">Cancelar</button>
+      <button id="btnSaveEdit" class="primary">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- Datos por defecto ----------
+const DEFAULT_WORDS = [
+["A","Empieza por A: Estado de ánimo en el que no se siente nada de tristeza ni alegría","indiferencia"],
+["B","Empieza por B: Instrumento de cuerda que se toca con arco, más grande que el violín","violonchelo"],
+["C","Contiene la C: Fenómeno atmosférico eléctrico que va acompañado de trueno","rayo"],
+["D","Empieza por D: Juego de mesa que se juega con fichas negras y blancas sobre un tablero","damas"],
+["E","Empieza por E: Aparato que sirve para subir y bajar personas entre plantas de un edificio","ascensor"],
+["F","Contiene la F: Instrumento óptico que sirve para ver objetos lejanos","catalejo"],
+["G","Empieza por G: Ave de corral que en Navidad se suele comer asada","pavo"],
+["H","Empieza por H: Deporte que se practica sobre hielo con un disco y un stick","hockey"],
+["I","Contiene la I: Insecto que produce miel y vive en colmenas","abeja"],
+["J","Empieza por J: Planta con espinas típica del desierto","cactus"],
+["L","Empieza por L: Órgano del cuerpo humano encargado de filtrar la sangre","hígado"],
+["M","Empieza por M: Instrumento que se usa para medir la temperatura corporal","termómetro"],
+["N","Empieza por N: Planeta más alejado del Sol del sistema solar","neptuno"],
+["Ñ","Contiene la Ñ: Hermano del cuñado","concuñado"],
+["O","Contiene la O: Deporte en el que se intenta marcar goles con los pies","fútbol"],
+["P","Empieza por P: Personaje de videojuego que es amarillo y puede lanzar electricidad","pikachu"],
+["Q","Empieza por Q: Alimento lácteo que se utiliza mucho en pizzas","queso"],
+["R","Empieza por R: Animal pequeño que tiene una cola larga y suele vivir en las casas o en el campo","ratón"],
+["S","Empieza por S: Criatura fantástica que suele vivir en el mar y tiene forma de mujer con cola de pez","sirena"],
+["T","Empieza por T: Red social conocida por sus vídeos cortos y bailes","tiktok"],
+["U","Contiene la U: Animal fantástico parecido a un caballo que tiene un cuerno en la cabeza","unicornio"],
+["V","Contiene la V: Medio de transporte que puede volar y lleva pasajeros","avión"],
+["X","Empieza por X: Instrumento musical que se toca con dos baquetas","xilófono"],
+["Y","Contiene la Y: Personaje de juguete vaquero de una famosa película de animación","woody"],
+["Z","Empieza por Z: Animal que se parece a un perro y vive en manadas","zorro"],
+];
+
+// ---------- Estado ----------
+let words = [];
+let order = [];
+let idx = 0;
+let timeLeft = 150;
+let timerId = null;
+let running = false;
+let correctCount = 0, wrongCount = 0, passCount = 0;
+let currentTranscript = "";
+let pendingVerdict = null; // 'correct' | 'wrong' | null
+let recognition = null;
+let recognizing = false;
+
+const el = (id) => document.getElementById(id);
+
+function normalize(s){
+  return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zñ0-9\s]/g,"").trim();
+}
+
+function similar(a,b){
+  a = normalize(a); b = normalize(b);
+  if(!a || !b) return false;
+  if(a === b) return true;
+  // acepta si una contiene a la otra (respuestas con articulo, plural, etc.)
+  if(a.includes(b) || b.includes(a)) return true;
+  // distancia de Levenshtein simple para pequeñas erratas de dictado
+  const d = levenshtein(a,b);
+  return d <= Math.max(1, Math.floor(b.length*0.25));
+}
+
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},()=>new Array(n+1).fill(0));
+  for(let i=0;i<=m;i++) dp[i][0]=i;
+  for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++)
+    for(let j=1;j<=n;j++)
+      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j-1],dp[i-1][j],dp[i][j-1]);
+  return dp[m][n];
+}
+
+function parseWords(text){
+  const out = [];
+  text.split("\n").forEach(line=>{
+    const parts = line.split("|");
+    if(parts.length>=3){
+      const letter = parts[0].trim().toUpperCase();
+      const clue = parts[1].trim();
+      const answer = parts.slice(2).join("|").trim();
+      if(letter && clue && answer) out.push({letter, clue, answer, status:"pending"});
+    }
+  });
+  return out;
+}
+
+function wordsToText(list){
+  return list.map(w=>`${w.letter}|${w.clue}|${w.answer}`).join("\n");
+}
+
+function loadDefault(){
+  words = DEFAULT_WORDS.map(([letter,clue,answer])=>({letter,clue,answer,status:"pending"}));
+}
+loadDefault();
+
+// ---------- Rosco visual ----------
+function layoutRosco(){
+  const holder = el('rosco');
+  holder.querySelectorAll('.letter').forEach(n=>n.remove());
+  const n = words.length;
+  const R = 148;
+  words.forEach((w,i)=>{
+    const angle = (i/n)*2*Math.PI - Math.PI/2;
+    const x = 160 + R*Math.cos(angle) - 19;
+    const y = 160 + R*Math.sin(angle) - 19;
+    const d = document.createElement('div');
+    d.className = 'letter';
+    d.id = 'L'+i;
+    d.textContent = w.letter;
+    d.style.left = x+'px';
+    d.style.top = y+'px';
+    holder.appendChild(d);
+  });
+}
+
+function refreshRosco(){
+  words.forEach((w,i)=>{
+    const d = el('L'+i);
+    if(!d) return;
+    d.className = 'letter ' + (i===idx && running ? 'current' : '') + ' ' + w.status;
+  });
+}
+
+function updateScore(){
+  el('scoreLine').innerHTML = `Aciertos: <b>${correctCount}</b> · Fallos: <b>${wrongCount}</b> · Pasadas: <b>${passCount}</b>`;
+}
+
+// ---------- Turnos ----------
+function nextPendingIndex(from){
+  const n = words.length;
+  for(let step=1; step<=n; step++){
+    const i = (from+step) % n;
+    if(words[i].status === 'pending') return i;
+  }
+  return -1;
+}
+
+function startTurn(){
+  if(!running) return;
+  currentTranscript = "";
+  pendingVerdict = null;
+  el('answerBox').className = 'answer-box';
+  el('answerBox').innerHTML = '<span class="placeholder">Escuchando… habla cuando oigas la pregunta</span>';
+  setVerdictButtons(false);
+  const w = words[idx];
+  el('clueText').innerHTML = `<b>${w.letter}.</b> ${escapeHtml(w.clue)}`;
+  refreshRosco();
+  speak(`${w.letter}. ${w.clue}`, () => {
+    if(running) startListening();
+  });
+}
+
+function escapeHtml(s){
+  return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function speak(text, onEnd){
+  if(!('speechSynthesis' in window)){ if(onEnd) onEnd(); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'es-ES';
+  u.rate = 1;
+  u.onend = () => { if(onEnd) onEnd(); };
+  window.speechSynthesis.speak(u);
+}
+
+// ---------- Reconocimiento de voz ----------
+function setupRecognition(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){
+    el('micStatus').textContent = 'Este navegador no soporta reconocimiento de voz (usa Chrome o Edge).';
+    return null;
+  }
+  const r = new SR();
+  r.lang = 'es-ES';
+  r.continuous = false;
+  r.interimResults = true;
+  r.onstart = () => {
+    recognizing = true;
+    el('micDot').classList.add('listening');
+    el('micStatus').textContent = 'Escuchando tu respuesta…';
+  };
+  r.onresult = (e) => {
+    let transcript = '';
+    for(let i=e.resultIndex; i<e.results.length; i++){
+      transcript += e.results[i][0].transcript;
+    }
+    currentTranscript = transcript;
+    handleTranscript(transcript, e.results[e.results.length-1].isFinal);
+  };
+  r.onerror = (e) => {
+    el('micStatus').textContent = 'No se ha entendido bien, pulsa 🔊 para repetir o responde manualmente.';
+  };
+  r.onend = () => {
+    recognizing = false;
+    el('micDot').classList.remove('listening');
+    if(running && !pendingVerdict){
+      el('micStatus').textContent = 'Micrófono en pausa · pulsa Repetir si no te ha oído';
+    }
+  };
+  return r;
+}
+
+function startListening(){
+  if(!recognition) recognition = setupRecognition();
+  if(!recognition) return;
+  try{ recognition.start(); }catch(e){ /* ya estaba activo */ }
+}
+
+function handleTranscript(transcript, isFinal){
+  const clean = transcript.trim();
+  if(!clean) return;
+
+  // comando de voz: pasapalabra
+  if(normalize(clean).includes('pasapalabra')){
+    if(isFinal) doPass();
+    return;
+  }
+
+  const w = words[idx];
+  const isMatch = similar(clean, w.answer);
+  el('answerBox').textContent = clean;
+  el('answerBox').className = 'answer-box ' + (isMatch ? 'correct' : 'wrong');
+  pendingVerdict = isMatch ? 'correct' : 'wrong';
+  setVerdictButtons(true);
+  el('micStatus').textContent = isMatch
+    ? 'Suena correcta · pulsa Correcta o Enter para confirmar'
+    : 'No coincide con la respuesta · confirma manualmente si crees que es un error de dictado';
+}
+
+function setVerdictButtons(enabled){
+  el('btnCorrect').disabled = !enabled;
+  el('btnWrong').disabled = !enabled;
+  el('btnPass').disabled = !running;
+  el('btnRepeat').disabled = !running;
+}
+
+// ---------- Acciones de turno ----------
+function doCorrect(){
+  if(!running) return;
+  words[idx].status = 'correct';
+  correctCount++;
+  advance();
+}
+function doWrong(){
+  if(!running) return;
+  words[idx].status = 'wrong';
+  wrongCount++;
+  advance();
+}
+function doPass(){
+  if(!running) return;
+  if(words[idx].status === 'pending'){
+    words[idx].status = 'passed';
+    passCount++;
+  }
+  advance();
+}
+
+function advance(){
+  updateScore();
+  refreshRosco();
+  if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
+  const next = nextPendingIndex(idx);
+  if(next === -1){
+    finishGame();
+    return;
+  }
+  idx = next;
+  setTimeout(startTurn, 500);
+}
+
+function finishGame(){
+  running = false;
+  clearInterval(timerId);
+  el('roscoCenter').innerHTML = `Rosco terminado<br><b>${correctCount}</b> aciertos`;
+  el('clueText').textContent = '¡Partida terminada! Reinicia para jugar otra vez.';
+  el('micStatus').textContent = 'Micrófono inactivo';
+  setVerdictButtons(false);
+  toggleTopButtons(false);
+  speak(`Rosco terminado. ${correctCount} aciertos.`);
+}
+
+// ---------- Temporizador ----------
+function formatTime(s){
+  const m = Math.floor(s/60), sec = s%60;
+  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+function tick(){
+  timeLeft--;
+  el('timer').textContent = formatTime(Math.max(timeLeft,0));
+  if(timeLeft<=0){
+    finishGame();
+  }
+}
+
+// ---------- Botones principales ----------
+function toggleTopButtons(isRunning){
+  el('btnStart').disabled = isRunning;
+  el('btnPause').disabled = !isRunning;
+  el('btnEdit').disabled = isRunning;
+  el('secondsSelect').disabled = isRunning;
+}
+
+el('btnStart').addEventListener('click', () => {
+  words.forEach(w=>w.status='pending');
+  correctCount=wrongCount=passCount=0;
+  updateScore();
+  idx = 0;
+  timeLeft = parseInt(el('secondsSelect').value,10);
+  el('timer').textContent = formatTime(timeLeft);
+  running = true;
+  toggleTopButtons(true);
+  el('roscoCenter').textContent = 'En juego…';
+  clearInterval(timerId);
+  timerId = setInterval(tick, 1000);
+  startTurn();
+});
+
+el('btnPause').addEventListener('click', () => {
+  if(running){
+    running = false;
+    clearInterval(timerId);
+    window.speechSynthesis.cancel();
+    if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
+    el('btnPause').textContent = '▶ Reanudar';
+    el('micStatus').textContent = 'En pausa';
+  } else {
+    running = true;
+    timerId = setInterval(tick, 1000);
+    el('btnPause').textContent = '⏸ Pausa';
+    startTurn();
+  }
+});
+
+el('btnRestart').addEventListener('click', () => {
+  running = false;
+  clearInterval(timerId);
+  window.speechSynthesis.cancel();
+  if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
+  words.forEach(w=>w.status='pending');
+  correctCount=wrongCount=passCount=0;
+  idx = 0;
+  updateScore();
+  refreshRosco();
+  el('timer').textContent = formatTime(parseInt(el('secondsSelect').value,10));
+  el('roscoCenter').innerHTML = 'Pulsa <b>Empezar</b><br>para jugar';
+  el('clueText').textContent = 'Edita las palabras o pulsa Empezar para usar la lista de ejemplo.';
+  el('answerBox').innerHTML = '<span class="placeholder">Aquí aparecerá lo que digas…</span>';
+  el('micStatus').textContent = 'Micrófono inactivo';
+  toggleTopButtons(false);
+  el('btnPause').textContent = '⏸ Pausa';
+  setVerdictButtons(false);
+});
+
+el('btnCorrect').addEventListener('click', doCorrect);
+el('btnWrong').addEventListener('click', doWrong);
+el('btnPass').addEventListener('click', doPass);
+el('btnRepeat').addEventListener('click', () => {
+  if(!running) return;
+  const w = words[idx];
+  if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
+  speak(`${w.letter}. ${w.clue}`, () => { if(running) startListening(); });
+});
+
+// ---------- Edición de palabras ----------
+el('btnEdit').addEventListener('click', () => {
+  el('wordsArea').value = wordsToText(words);
+  el('editBackdrop').classList.add('open');
+});
+el('btnCancelEdit').addEventListener('click', () => el('editBackdrop').classList.remove('open'));
+el('btnSaveEdit').addEventListener('click', () => {
+  const parsed = parseWords(el('wordsArea').value);
+  if(parsed.length >= 3){
+    words = parsed;
+    idx = 0;
+    layoutRosco();
+    refreshRosco();
+  }
+  el('editBackdrop').classList.remove('open');
+});
+
+// ---------- Atajos de teclado ----------
+document.addEventListener('keydown', (e) => {
+  if(el('editBackdrop').classList.contains('open')) return;
+  if(e.key === 'Enter' && !el('btnCorrect').disabled) doCorrect();
+  else if((e.key === 'x' || e.key === 'X') && !el('btnWrong').disabled) doWrong();
+  else if(e.key === ' ' && running){ e.preventDefault(); doPass(); }
+  else if(e.ctrlKey && (e.key === 'r' || e.key === 'R')){ e.preventDefault(); el('btnRestart').click(); }
+});
+
+// ---------- Init ----------
+layoutRosco();
+refreshRosco();
+updateScore();
+el('timer').textContent = formatTime(parseInt(el('secondsSelect').value,10));
+</script>
+</body>
+</html>
