@@ -20,19 +20,14 @@
   *{ box-sizing: border-box; }
   body{
     margin:0;
-    background: radial-gradient(1200px 700px at 50% -10%, #1a2544 0%, var(--bg) 60%);
+    background: radial-gradient(1400px 800px at 50% -10%, #1a2544 0%, var(--bg) 60%);
     color: var(--cream);
     min-height:100vh;
-    padding: 28px 16px 60px;
+    padding: 24px 24px 50px;
   }
-  .wrap{ max-width: 920px; margin: 0 auto; }
-  header{ text-align:center; margin-bottom: 22px; }
-  header h1{
-    font-size: 1.5rem;
-    letter-spacing: .02em;
-    margin: 0 0 4px;
-    font-weight: 700;
-  }
+  .wrap{ max-width: 1500px; margin: 0 auto; }
+  header{ text-align:center; margin-bottom: 18px; }
+  header h1{ font-size: 1.6rem; letter-spacing: .02em; margin: 0 0 4px; font-weight: 700; }
   header h1 span{ color: var(--gold); }
   header p{ margin:0; color: var(--muted); font-size: .85rem; }
 
@@ -40,21 +35,17 @@
     background: var(--bg-panel);
     border: 1px solid var(--line);
     border-radius: 14px;
-    padding: 18px;
-    margin-bottom: 18px;
+    padding: 16px 18px;
   }
 
-  .controls{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; }
+  .controls{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center;
+    margin-bottom: 16px;
+  }
   button{
-    font: inherit;
-    font-weight: 600;
-    font-size: .85rem;
-    border: 1px solid var(--line);
-    background: var(--bg-panel-2);
-    color: var(--cream);
-    padding: 10px 16px;
-    border-radius: 9px;
-    cursor: pointer;
+    font: inherit; font-weight: 600; font-size: .85rem;
+    border: 1px solid var(--line); background: var(--bg-panel-2); color: var(--cream);
+    padding: 10px 16px; border-radius: 9px; cursor: pointer;
     transition: transform .08s ease, background .15s ease, border-color .15s ease;
   }
   button:hover{ border-color: var(--gold-dim); }
@@ -65,82 +56,98 @@
   button.danger{ background: transparent; color: var(--red); border-color: var(--red); }
   button.ghost{ background: transparent; }
 
-  .timer{
-    font-variant-numeric: tabular-nums;
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: var(--gold);
-    min-width: 84px;
-    text-align:center;
-  }
-  select, input[type=number]{
-    font: inherit; background: var(--bg-panel-2); color: var(--cream);
-    border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
-  }
+  .timer{ font-variant-numeric: tabular-nums; font-size: 1.6rem; font-weight: 700; color: var(--gold); min-width: 84px; text-align:center; }
+  select{ font: inherit; background: var(--bg-panel-2); color: var(--cream); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
 
+  /* ---- Stage: big rosco + slim sidebar ---- */
   .stage{
     display:grid;
-    grid-template-columns: 340px 1fr;
-    gap: 22px;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
     align-items: start;
   }
-  @media (max-width: 760px){ .stage{ grid-template-columns: 1fr; } }
+  @media (max-width: 980px){ .stage{ grid-template-columns: 1fr; } }
 
-  .rosco-holder{ position:relative; width: 320px; height: 320px; margin: 0 auto; }
+  .rosco-panel{ display:flex; justify-content:center; padding: 32px; }
+  .rosco-holder{
+    position:relative;
+    width: min(78vh, 78vw, 760px);
+    aspect-ratio: 1 / 1;
+  }
   .letter{
-    position:absolute; width: 38px; height: 38px; border-radius: 50%;
+    position:absolute;
+    width: clamp(38px, 4.6vw, 58px);
+    height: clamp(38px, 4.6vw, 58px);
+    left:0; top:0;
+    border-radius: 50%;
     display:flex; align-items:center; justify-content:center;
-    font-weight: 700; font-size: .95rem;
+    font-weight: 700; font-size: clamp(1rem, 1.6vw, 1.3rem);
     background: var(--bg-panel-2); border: 2px solid var(--line);
     color: var(--muted);
-    transition: all .2s ease;
+    transform: translate(-50%,-50%);
+    transition: background .2s ease, border-color .2s ease, color .2s ease, transform .2s ease;
   }
   .letter.current{
     background: var(--gold); border-color: var(--gold); color:#231705;
-    transform: scale(1.18);
-    box-shadow: 0 0 0 6px rgba(232,179,76,.18);
+    transform: translate(-50%,-50%) scale(1.22);
+    box-shadow: 0 0 0 8px rgba(232,179,76,.16);
   }
   .letter.correct{ background: var(--green); border-color: var(--green); color:#082818; }
   .letter.wrong{ background: var(--red); border-color: var(--red); color:#2b0508; }
   .letter.passed{ border-color: var(--gold-dim); color: var(--gold-dim); }
+
   .rosco-center{
-    position:absolute; inset: 76px; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
+    position:absolute; inset: 21%; border-radius:50%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
     background: var(--bg-panel); border: 1px solid var(--line);
-    text-align:center; padding: 10px; font-size: .78rem; color: var(--muted);
+    text-align:center; padding: 4%;
   }
+  .rc-letter{ font-size: clamp(2.2rem, 5vw, 3.4rem); font-weight: 800; color: var(--gold); line-height:1; margin-bottom: .4em; }
+  .rc-clue{ font-size: clamp(.95rem, 1.6vw, 1.3rem); line-height:1.45; max-width: 90%; }
+  .rc-status{ margin-top: .8em; font-size: clamp(.7rem, 1.1vw, .85rem); color: var(--muted); }
+  .rc-idle{ color: var(--muted); font-size: clamp(1rem, 1.8vw, 1.4rem); }
 
-  .score{ text-align:center; margin-top: 12px; font-size:.8rem; color: var(--muted); }
-  .score b{ color: var(--cream); }
-
-  .clue-box{ min-height: 90px; }
-  .clue-label{ font-size:.72rem; letter-spacing:.04em; color: var(--gold-dim); margin-bottom:6px; }
-  .clue-text{ font-size: 1.15rem; line-height:1.5; }
-  .clue-text b{ color: var(--gold); }
-
-  .mic-row{ display:flex; align-items:center; gap:10px; margin: 14px 0 6px; }
-  .mic-dot{
-    width: 12px; height:12px; border-radius:50%; background: var(--line); flex-shrink:0;
+  /* ---- Sidebar ---- */
+  .sidebar{ display:flex; flex-direction:column; gap: 14px; }
+  .stat-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat{
+    background: var(--bg-panel-2); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 8px; text-align:center;
   }
-  .mic-dot.listening{ background: var(--red); box-shadow: 0 0 0 0 rgba(242,100,107,.5); animation: pulse 1.2s infinite; }
+  .stat .n{ font-size: 1.5rem; font-weight: 800; color: var(--cream); }
+  .stat .l{ font-size: .68rem; color: var(--muted); letter-spacing:.03em; margin-top: 2px; }
+  .stat.green .n{ color: var(--green); }
+  .stat.red .n{ color: var(--red); }
+  .stat.gold .n{ color: var(--gold); }
+
+  .mic-row{ display:flex; align-items:center; gap:10px; }
+  .mic-dot{ width: 12px; height:12px; border-radius:50%; background: var(--line); flex-shrink:0; }
+  .mic-dot.listening{ background: var(--red); animation: pulse 1.2s infinite; }
   @keyframes pulse{
     0%{ box-shadow: 0 0 0 0 rgba(242,100,107,.5); }
     70%{ box-shadow: 0 0 0 10px rgba(242,100,107,0); }
     100%{ box-shadow: 0 0 0 0 rgba(242,100,107,0); }
   }
-  .mic-status{ font-size: .82rem; color: var(--muted); }
+  .mic-status{ font-size: .8rem; color: var(--muted); }
 
+  .legend{ font-size: .72rem; color: var(--muted); line-height: 1.6; }
+  .legend b{ color: var(--cream); }
+
+  /* ---- Bottom answer bar ---- */
+  .answer-panel{ margin-top: 18px; }
+  .answer-row{ display:flex; gap: 14px; align-items:stretch; flex-wrap: wrap; }
   .answer-box{
+    flex: 1 1 320px;
     background: var(--bg-panel-2); border: 1px dashed var(--line);
-    border-radius: 10px; padding: 12px 14px; min-height: 46px;
-    font-size: 1.05rem; margin: 6px 0 14px;
+    border-radius: 10px; padding: 14px 16px; min-height: 30px;
+    font-size: 1.15rem; display:flex; align-items:center;
   }
   .answer-box.correct{ border-color: var(--green); background: rgba(79,209,139,.08); }
   .answer-box.wrong{ border-color: var(--red); background: rgba(242,100,107,.08); }
   .answer-box .placeholder{ color: var(--muted); font-style: italic; font-size:.9rem; }
 
   .verdict-row{ display:flex; gap:10px; flex-wrap:wrap; }
-  .verdict-row button{ flex:1; min-width: 120px; }
+  .verdict-row button{ flex: 1 1 130px; }
 
   textarea{
     width:100%; min-height: 220px; background: var(--bg-panel-2); color: var(--cream);
@@ -167,12 +174,12 @@
     <p>La IA lee la pregunta y escucha tu respuesta &middot; tú solo confirmas</p>
   </header>
 
-  <div class="panel controls">
+  <div class="controls panel">
     <button id="btnEdit" class="ghost">✏️ Editar palabras</button>
     <button id="btnStart" class="primary">▶ Empezar</button>
     <button id="btnPause" disabled>⏸ Pausa</button>
     <button id="btnRestart" class="danger">↻ Reiniciar</button>
-    <div class="timer" id="timer">02:00</div>
+    <div class="timer" id="timer">02:30</div>
     <select id="secondsSelect">
       <option value="120">2:00 min</option>
       <option value="150" selected>2:30 min</option>
@@ -181,37 +188,53 @@
     </select>
   </div>
 
-  <div class="stage">
-    <div class="panel">
+  <div class="stage" style="margin-top:16px;">
+    <div class="panel rosco-panel">
       <div class="rosco-holder" id="rosco">
-        <div class="rosco-center" id="roscoCenter">Pulsa <b>Empezar</b><br>para jugar</div>
+        <div class="rosco-center" id="roscoCenter">
+          <div class="rc-idle">Pulsa <b>Empezar</b><br>para jugar</div>
+        </div>
       </div>
-      <div class="score" id="scoreLine">Aciertos: <b>0</b> · Fallos: <b>0</b> · Pasadas: <b>0</b></div>
     </div>
 
-    <div class="panel">
-      <div class="clue-box">
-        <div class="clue-label">PREGUNTA</div>
-        <div class="clue-text" id="clueText">Edita las palabras o pulsa Empezar para usar la lista de ejemplo.</div>
+    <div class="sidebar">
+      <div class="panel">
+        <div class="stat-grid">
+          <div class="stat green"><div class="n" id="stCorrect">0</div><div class="l">ACIERTOS</div></div>
+          <div class="stat red"><div class="n" id="stWrong">0</div><div class="l">FALLOS</div></div>
+          <div class="stat gold"><div class="n" id="stPass">0</div><div class="l">PASADAS</div></div>
+          <div class="stat"><div class="n" id="stLeft">27</div><div class="l">RESTANTES</div></div>
+        </div>
       </div>
-
-      <div class="mic-row">
-        <div class="mic-dot" id="micDot"></div>
-        <div class="mic-status" id="micStatus">Micrófono inactivo</div>
+      <div class="panel">
+        <div class="mic-row">
+          <div class="mic-dot" id="micDot"></div>
+          <div class="mic-status" id="micStatus">Micrófono inactivo</div>
+        </div>
       </div>
-
-      <div class="answer-box" id="answerBox"><span class="placeholder">Aquí aparecerá lo que digas…</span></div>
-
-      <div class="verdict-row">
-        <button id="btnCorrect" class="primary" disabled>✔ Correcta (Enter)</button>
-        <button id="btnWrong" class="danger" disabled>✘ Incorrecta (X)</button>
-        <button id="btnPass" class="ghost" disabled>⏭ Pasapalabra (Espacio)</button>
-        <button id="btnRepeat" class="ghost" disabled>🔊 Repetir pregunta</button>
+      <div class="panel legend">
+        <div><b>Enter</b> = correcta</div>
+        <div><b>X</b> = incorrecta</div>
+        <div><b>Espacio</b> = pasapalabra</div>
+        <div><b>Ctrl+R</b> = reiniciar</div>
+        <div style="margin-top:6px;">Requiere Chrome o Edge + micrófono.</div>
       </div>
     </div>
   </div>
 
-  <p class="hint">Atajos: Enter = correcta &middot; X = incorrecta &middot; Espacio = pasapalabra &middot; Ctrl+R = reiniciar. Requiere Chrome o Edge y micrófono.</p>
+  <div class="panel answer-panel">
+    <div class="answer-row">
+      <div class="answer-box" id="answerBox"><span class="placeholder">Aquí aparecerá lo que digas…</span></div>
+    </div>
+    <div class="verdict-row" style="margin-top:12px;">
+      <button id="btnCorrect" class="primary" disabled>✔ Correcta (Enter)</button>
+      <button id="btnWrong" class="danger" disabled>✘ Incorrecta (X)</button>
+      <button id="btnPass" class="ghost" disabled>⏭ Pasapalabra (Espacio)</button>
+      <button id="btnRepeat" class="ghost" disabled>🔊 Repetir pregunta</button>
+    </div>
+  </div>
+
+  <p class="hint">Formato de edición: LETRA|PREGUNTA|RESPUESTA, una línea por letra.</p>
 </div>
 
 <div class="modal-backdrop" id="editBackdrop">
@@ -258,14 +281,11 @@ const DEFAULT_WORDS = [
 
 // ---------- Estado ----------
 let words = [];
-let order = [];
 let idx = 0;
 let timeLeft = 150;
 let timerId = null;
 let running = false;
 let correctCount = 0, wrongCount = 0, passCount = 0;
-let currentTranscript = "";
-let pendingVerdict = null; // 'correct' | 'wrong' | null
 let recognition = null;
 let recognizing = false;
 
@@ -274,18 +294,14 @@ const el = (id) => document.getElementById(id);
 function normalize(s){
   return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zñ0-9\s]/g,"").trim();
 }
-
 function similar(a,b){
   a = normalize(a); b = normalize(b);
   if(!a || !b) return false;
   if(a === b) return true;
-  // acepta si una contiene a la otra (respuestas con articulo, plural, etc.)
   if(a.includes(b) || b.includes(a)) return true;
-  // distancia de Levenshtein simple para pequeñas erratas de dictado
   const d = levenshtein(a,b);
   return d <= Math.max(1, Math.floor(b.length*0.25));
 }
-
 function levenshtein(a,b){
   const m=a.length,n=b.length;
   const dp=Array.from({length:m+1},()=>new Array(n+1).fill(0));
@@ -310,14 +326,8 @@ function parseWords(text){
   });
   return out;
 }
-
-function wordsToText(list){
-  return list.map(w=>`${w.letter}|${w.clue}|${w.answer}`).join("\n");
-}
-
-function loadDefault(){
-  words = DEFAULT_WORDS.map(([letter,clue,answer])=>({letter,clue,answer,status:"pending"}));
-}
+function wordsToText(list){ return list.map(w=>`${w.letter}|${w.clue}|${w.answer}`).join("\n"); }
+function loadDefault(){ words = DEFAULT_WORDS.map(([letter,clue,answer])=>({letter,clue,answer,status:"pending"})); }
 loadDefault();
 
 // ---------- Rosco visual ----------
@@ -325,17 +335,17 @@ function layoutRosco(){
   const holder = el('rosco');
   holder.querySelectorAll('.letter').forEach(n=>n.remove());
   const n = words.length;
-  const R = 148;
+  const Rpct = 42; // % del contenedor
   words.forEach((w,i)=>{
     const angle = (i/n)*2*Math.PI - Math.PI/2;
-    const x = 160 + R*Math.cos(angle) - 19;
-    const y = 160 + R*Math.sin(angle) - 19;
+    const x = 50 + Rpct*Math.cos(angle);
+    const y = 50 + Rpct*Math.sin(angle);
     const d = document.createElement('div');
     d.className = 'letter';
     d.id = 'L'+i;
     d.textContent = w.letter;
-    d.style.left = x+'px';
-    d.style.top = y+'px';
+    d.style.left = x+'%';
+    d.style.top = y+'%';
     holder.appendChild(d);
   });
 }
@@ -346,10 +356,14 @@ function refreshRosco(){
     if(!d) return;
     d.className = 'letter ' + (i===idx && running ? 'current' : '') + ' ' + w.status;
   });
+  const left = words.filter(w=>w.status==='pending').length;
+  el('stLeft').textContent = left;
 }
 
 function updateScore(){
-  el('scoreLine').innerHTML = `Aciertos: <b>${correctCount}</b> · Fallos: <b>${wrongCount}</b> · Pasadas: <b>${passCount}</b>`;
+  el('stCorrect').textContent = correctCount;
+  el('stWrong').textContent = wrongCount;
+  el('stPass').textContent = passCount;
 }
 
 // ---------- Turnos ----------
@@ -364,29 +378,25 @@ function nextPendingIndex(from){
 
 function startTurn(){
   if(!running) return;
-  currentTranscript = "";
-  pendingVerdict = null;
   el('answerBox').className = 'answer-box';
   el('answerBox').innerHTML = '<span class="placeholder">Escuchando… habla cuando oigas la pregunta</span>';
   setVerdictButtons(false);
   const w = words[idx];
-  el('clueText').innerHTML = `<b>${w.letter}.</b> ${escapeHtml(w.clue)}`;
+  el('roscoCenter').innerHTML = `
+    <div class="rc-letter">${w.letter}</div>
+    <div class="rc-clue">${escapeHtml(w.clue)}</div>
+    <div class="rc-status" id="rcStatus">Escuchando…</div>`;
   refreshRosco();
-  speak(`${w.letter}. ${w.clue}`, () => {
-    if(running) startListening();
-  });
+  speak(`${w.letter}. ${w.clue}`, () => { if(running) startListening(); });
 }
 
-function escapeHtml(s){
-  return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-}
+function escapeHtml(s){ return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 function speak(text, onEnd){
   if(!('speechSynthesis' in window)){ if(onEnd) onEnd(); return; }
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'es-ES';
-  u.rate = 1;
+  u.lang = 'es-ES'; u.rate = 1;
   u.onend = () => { if(onEnd) onEnd(); };
   window.speechSynthesis.speak(u);
 }
@@ -399,9 +409,7 @@ function setupRecognition(){
     return null;
   }
   const r = new SR();
-  r.lang = 'es-ES';
-  r.continuous = false;
-  r.interimResults = true;
+  r.lang = 'es-ES'; r.continuous = false; r.interimResults = true;
   r.onstart = () => {
     recognizing = true;
     el('micDot').classList.add('listening');
@@ -409,50 +417,36 @@ function setupRecognition(){
   };
   r.onresult = (e) => {
     let transcript = '';
-    for(let i=e.resultIndex; i<e.results.length; i++){
-      transcript += e.results[i][0].transcript;
-    }
-    currentTranscript = transcript;
+    for(let i=e.resultIndex; i<e.results.length; i++) transcript += e.results[i][0].transcript;
     handleTranscript(transcript, e.results[e.results.length-1].isFinal);
   };
-  r.onerror = (e) => {
-    el('micStatus').textContent = 'No se ha entendido bien, pulsa 🔊 para repetir o responde manualmente.';
-  };
+  r.onerror = () => { el('micStatus').textContent = 'No se ha entendido bien, pulsa 🔊 para repetir o responde manualmente.'; };
   r.onend = () => {
     recognizing = false;
     el('micDot').classList.remove('listening');
-    if(running && !pendingVerdict){
-      el('micStatus').textContent = 'Micrófono en pausa · pulsa Repetir si no te ha oído';
-    }
+    if(running) el('micStatus').textContent = 'Micrófono en pausa · pulsa Repetir si no te ha oído';
   };
   return r;
 }
-
 function startListening(){
   if(!recognition) recognition = setupRecognition();
   if(!recognition) return;
-  try{ recognition.start(); }catch(e){ /* ya estaba activo */ }
+  try{ recognition.start(); }catch(e){}
 }
-
 function handleTranscript(transcript, isFinal){
   const clean = transcript.trim();
   if(!clean) return;
-
-  // comando de voz: pasapalabra
-  if(normalize(clean).includes('pasapalabra')){
-    if(isFinal) doPass();
-    return;
-  }
-
+  if(normalize(clean).includes('pasapalabra')){ if(isFinal) doPass(); return; }
   const w = words[idx];
   const isMatch = similar(clean, w.answer);
   el('answerBox').textContent = clean;
   el('answerBox').className = 'answer-box ' + (isMatch ? 'correct' : 'wrong');
-  pendingVerdict = isMatch ? 'correct' : 'wrong';
   setVerdictButtons(true);
+  const rc = el('rcStatus');
+  if(rc) rc.textContent = isMatch ? 'Suena correcta ✔' : 'No coincide con la respuesta';
   el('micStatus').textContent = isMatch
     ? 'Suena correcta · pulsa Correcta o Enter para confirmar'
-    : 'No coincide con la respuesta · confirma manualmente si crees que es un error de dictado';
+    : 'No coincide · confirma manualmente si crees que es un error de dictado';
 }
 
 function setVerdictButtons(enabled){
@@ -463,36 +457,16 @@ function setVerdictButtons(enabled){
 }
 
 // ---------- Acciones de turno ----------
-function doCorrect(){
-  if(!running) return;
-  words[idx].status = 'correct';
-  correctCount++;
-  advance();
-}
-function doWrong(){
-  if(!running) return;
-  words[idx].status = 'wrong';
-  wrongCount++;
-  advance();
-}
-function doPass(){
-  if(!running) return;
-  if(words[idx].status === 'pending'){
-    words[idx].status = 'passed';
-    passCount++;
-  }
-  advance();
-}
+function doCorrect(){ if(!running) return; words[idx].status='correct'; correctCount++; advance(); }
+function doWrong(){ if(!running) return; words[idx].status='wrong'; wrongCount++; advance(); }
+function doPass(){ if(!running) return; if(words[idx].status==='pending'){ words[idx].status='passed'; passCount++; } advance(); }
 
 function advance(){
   updateScore();
   refreshRosco();
   if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
   const next = nextPendingIndex(idx);
-  if(next === -1){
-    finishGame();
-    return;
-  }
+  if(next === -1){ finishGame(); return; }
   idx = next;
   setTimeout(startTurn, 500);
 }
@@ -500,8 +474,7 @@ function advance(){
 function finishGame(){
   running = false;
   clearInterval(timerId);
-  el('roscoCenter').innerHTML = `Rosco terminado<br><b>${correctCount}</b> aciertos`;
-  el('clueText').textContent = '¡Partida terminada! Reinicia para jugar otra vez.';
+  el('roscoCenter').innerHTML = `<div class="rc-idle">Rosco terminado<br><span style="color:var(--gold)">${correctCount}</span> aciertos</div>`;
   el('micStatus').textContent = 'Micrófono inactivo';
   setVerdictButtons(false);
   toggleTopButtons(false);
@@ -509,17 +482,8 @@ function finishGame(){
 }
 
 // ---------- Temporizador ----------
-function formatTime(s){
-  const m = Math.floor(s/60), sec = s%60;
-  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
-}
-function tick(){
-  timeLeft--;
-  el('timer').textContent = formatTime(Math.max(timeLeft,0));
-  if(timeLeft<=0){
-    finishGame();
-  }
-}
+function formatTime(s){ const m=Math.floor(s/60), sec=s%60; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
+function tick(){ timeLeft--; el('timer').textContent = formatTime(Math.max(timeLeft,0)); if(timeLeft<=0) finishGame(); }
 
 // ---------- Botones principales ----------
 function toggleTopButtons(isRunning){
@@ -538,7 +502,6 @@ el('btnStart').addEventListener('click', () => {
   el('timer').textContent = formatTime(timeLeft);
   running = true;
   toggleTopButtons(true);
-  el('roscoCenter').textContent = 'En juego…';
   clearInterval(timerId);
   timerId = setInterval(tick, 1000);
   startTurn();
@@ -546,33 +509,25 @@ el('btnStart').addEventListener('click', () => {
 
 el('btnPause').addEventListener('click', () => {
   if(running){
-    running = false;
-    clearInterval(timerId);
-    window.speechSynthesis.cancel();
+    running = false; clearInterval(timerId); window.speechSynthesis.cancel();
     if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
     el('btnPause').textContent = '▶ Reanudar';
     el('micStatus').textContent = 'En pausa';
   } else {
-    running = true;
-    timerId = setInterval(tick, 1000);
+    running = true; timerId = setInterval(tick, 1000);
     el('btnPause').textContent = '⏸ Pausa';
     startTurn();
   }
 });
 
 el('btnRestart').addEventListener('click', () => {
-  running = false;
-  clearInterval(timerId);
-  window.speechSynthesis.cancel();
+  running = false; clearInterval(timerId); window.speechSynthesis.cancel();
   if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
   words.forEach(w=>w.status='pending');
-  correctCount=wrongCount=passCount=0;
-  idx = 0;
-  updateScore();
-  refreshRosco();
+  correctCount=wrongCount=passCount=0; idx = 0;
+  updateScore(); refreshRosco();
   el('timer').textContent = formatTime(parseInt(el('secondsSelect').value,10));
-  el('roscoCenter').innerHTML = 'Pulsa <b>Empezar</b><br>para jugar';
-  el('clueText').textContent = 'Edita las palabras o pulsa Empezar para usar la lista de ejemplo.';
+  el('roscoCenter').innerHTML = '<div class="rc-idle">Pulsa <b>Empezar</b><br>para jugar</div>';
   el('answerBox').innerHTML = '<span class="placeholder">Aquí aparecerá lo que digas…</span>';
   el('micStatus').textContent = 'Micrófono inactivo';
   toggleTopButtons(false);
@@ -599,10 +554,8 @@ el('btnCancelEdit').addEventListener('click', () => el('editBackdrop').classList
 el('btnSaveEdit').addEventListener('click', () => {
   const parsed = parseWords(el('wordsArea').value);
   if(parsed.length >= 3){
-    words = parsed;
-    idx = 0;
-    layoutRosco();
-    refreshRosco();
+    words = parsed; idx = 0;
+    layoutRosco(); refreshRosco();
   }
   el('editBackdrop').classList.remove('open');
 });
