@@ -239,6 +239,7 @@
       <span><b>Espacio</b> pasapalabra</span>
       <span><b>S</b> ver respuesta</span>
       <span><b>Ctrl+R</b> reiniciar</span>
+      <span>Micro: móvil-cámara si está conectado, si no el del ordenador</span>
     </div>
     <div class="pair-indicator" id="pairIndicator"></div>
     <div class="pair-indicator" id="videoIndicator"></div>
@@ -290,7 +291,7 @@
 <div class="modal-backdrop" id="linkBackdrop">
   <div class="modal">
     <h2>Vincular móvil</h2>
-    <div class="edit-help">Abre <b>controls.html</b> en el móvil del presentador (para los controles) y/o <b>camera.html</b> en el móvil del trípode (para grabar al jugador). Ambos usan este mismo código, cada uno conecta por separado. Los dos dispositivos necesitan conexión a internet.</div>
+    <div class="edit-help">Abre <b>controls.html</b> en el móvil del presentador (solo controles, sin audio ni cámara) y <b>camera.html</b> en el móvil del trípode (cámara y también el micrófono de la partida). Ambos usan este mismo código, cada uno conecta por separado. Los dos dispositivos necesitan conexión a internet.</div>
     <div class="paircode" id="pairCodeDisplay">----</div>
     <div class="mic-status" id="pairStatus" style="text-align:center;">Generando código…</div>
     <div class="edit-actions"><button id="btnCloseLink" class="ghost">Cerrar</button></div>
@@ -342,7 +343,8 @@ let timerId = null;
 let running = false;
 let recognition = null;
 let recognizing = false;
-let peer = null, mobileConn = null, pairCode = null;
+let peer = null, mobileConn = null, cameraConn = null, pairCode = null;
+let connRoles = new WeakMap();
 let edDraft = ['',''], edTab = 0;
 
 function currentPlayer(){ return players[active]; }
@@ -534,11 +536,22 @@ function setupRecognition(){
   return r;
 }
 function startListening(){
+  if(cameraConn && cameraConn.open){
+    el('micDot').classList.add('listening');
+    el('micStatus').textContent = 'Escuchando desde el móvil-cámara…';
+    cameraConn.send({type:'listen'});
+    return;
+  }
   if(!recognition) recognition = setupRecognition();
   if(!recognition) return;
   try{ recognition.start(); }catch(e){}
 }
+function stopListening(){
+  if(cameraConn && cameraConn.open){ cameraConn.send({type:'stopListen'}); return; }
+  if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
+}
 function handleTranscript(transcript, isFinal){
+  if(!running) return;
   const clean = transcript.trim();
   if(!clean) return;
   if(normalize(clean).includes('pasapalabra')){ if(isFinal) doPass(); return; }
@@ -581,7 +594,7 @@ function doPass(){ if(!running) return; const p=currentPlayer(); if(p.words[p.id
 
 function advance(keepTurn){
   refreshAllStats(); refreshAllRoscos();
-  if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
+  stopListening();
   const p = currentPlayer();
   const nextOwn = nextPendingIndex(p, p.idx);
 
@@ -686,7 +699,7 @@ el('btnStart').addEventListener('click', () => {
 el('btnPause').addEventListener('click', () => {
   if(running){
     running = false; clearInterval(timerId); window.speechSynthesis.cancel();
-    if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
+    stopListening();
     el('btnPause').textContent = '▶ Reanudar';
     el('micStatus').textContent = 'En pausa';
   } else {
@@ -699,7 +712,7 @@ el('btnPause').addEventListener('click', () => {
 
 el('btnRestart').addEventListener('click', () => {
   running = false; clearInterval(timerId); window.speechSynthesis.cancel();
-  if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
+  stopListening();
   resetAllPlayers();
   el('timer').textContent = formatTime(parseInt(el('secondsSelect').value,10));
   renderStage();
@@ -718,7 +731,7 @@ el('btnPass').addEventListener('click', doPass);
 el('btnRepeat').addEventListener('click', () => {
   if(!running) return;
   const p = currentPlayer(); const w = p.words[p.idx];
-  if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
+  stopListening();
   speak(`${w.letter}. ${w.clue}`, () => { if(running) startListening(); });
 });
 el('btnSolution').addEventListener('click', doReveal);
@@ -792,22 +805,33 @@ function openLinkModal(){
   el('pairStatus').textContent = 'Generando código…';
   el('linkBackdrop').classList.add('open');
   if(peer){ try{ peer.destroy(); }catch(e){} }
-  mobileConn = null;
+  mobileConn = null; cameraConn = null;
   peer = new Peer('rosco-'+pairCode, { config: ICE_CONFIG });
   peer.on('open', () => { el('pairStatus').textContent = 'Esperando conexión del móvil…'; });
   peer.on('connection', (conn) => {
-    el('pairStatus').textContent = 'Móvil detectado, estableciendo conexión…';
-    conn.on('open', () => {
-      mobileConn = conn;
-      el('pairStatus').textContent = '📱 Mando conectado';
-      el('pairIndicator').textContent = '📱 Mando conectado';
-      pushState();
+    el('pairStatus').textContent = 'Dispositivo detectado, estableciendo conexión…';
+    conn.on('data', (msg) => {
+      if(msg && msg.type === 'hello'){
+        connRoles.set(conn, msg.role);
+        if(msg.role === 'camera'){
+          cameraConn = conn;
+          el('videoIndicator').textContent = (el('videoIndicator').textContent || '🎥 Cámara conectada') + ' 🎤';
+        } else {
+          mobileConn = conn;
+          el('pairStatus').textContent = '📱 Mando conectado';
+          el('pairIndicator').textContent = '📱 Mando conectado';
+          pushState();
+        }
+        return;
+      }
+      const role = connRoles.get(conn) || 'controls';
+      if(role === 'camera') handleCameraMessage(msg);
+      else handleRemoteCommand(msg);
     });
-    conn.on('data', handleRemoteCommand);
     conn.on('close', () => {
-      mobileConn = null;
-      el('pairIndicator').textContent = '';
-      el('pairStatus').textContent = 'Móvil desconectado';
+      const role = connRoles.get(conn);
+      if(role === 'camera'){ cameraConn = null; el('videoIndicator').textContent = el('videoIndicator').textContent.replace(' 🎤','') || ''; }
+      else { mobileConn = null; el('pairIndicator').textContent = ''; el('pairStatus').textContent = 'Móvil desconectado'; }
     });
     conn.on('error', () => { el('pairStatus').textContent = 'Error en la conexión con el móvil.'; });
   });
@@ -930,6 +954,18 @@ function handleRemoteCommand(msg){
     case 'reveal': if(!el('btnSolution').disabled) doReveal(); break;
     case 'setWords': applyRemoteWords(msg.text); break;
   }
+}
+
+function handleCameraMessage(msg){
+  if(!msg || !msg.type) return;
+  if(msg.type === 'transcript') { handleTranscript(msg.text, msg.isFinal); return; }
+  if(msg.type === 'listening'){ el('micDot').classList.add('listening'); el('micStatus').textContent = 'Escuchando desde el móvil-cámara…'; return; }
+  if(msg.type === 'listeningEnded'){
+    el('micDot').classList.remove('listening');
+    if(running && el('btnCorrect').disabled) el('micStatus').textContent = 'Micrófono en pausa (móvil-cámara) · pulsa Repetir si no te ha oído';
+    return;
+  }
+  if(msg.type === 'error'){ el('micStatus').textContent = 'El móvil-cámara no ha podido escuchar. Pulsa Repetir.'; return; }
 }
 function pushState(){
   if(!mobileConn || !mobileConn.open) return;
