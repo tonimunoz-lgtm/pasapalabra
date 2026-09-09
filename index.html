@@ -658,8 +658,9 @@
 
   function updateScoreboardUI() {
     [1, 2].forEach(p => {
-      if (!playersData[p] || !playersData[p].states) return;
-      document.getElementById(`p${p}Time`).innerText = formatTime(playersData[p].time);
+      if (!playersData[p]) return;
+      const timeElem = document.getElementById(`p${p}Time`);
+      if (timeElem) timeElem.innerText = formatTime(playersData[p].time);
       
       let ok = 0, fail = 0, pass = 0, rest = 0;
       alphabet.forEach(l => {
@@ -670,10 +671,15 @@
         else rest++;
       });
 
-      document.getElementById(`p${p}-ok`).innerText = ok;
-      document.getElementById(`p${p}-fail`).innerText = fail;
-      document.getElementById(`p${p}-pass`).innerText = pass;
-      document.getElementById(`p${p}-rest`).innerText = rest;
+      const okElem = document.getElementById(`p${p}-ok`);
+      const failElem = document.getElementById(`p${p}-fail`);
+      const passElem = document.getElementById(`p${p}-pass`);
+      const restElem = document.getElementById(`p${p}-rest`);
+
+      if (okElem) okElem.innerText = ok;
+      if (failElem) failElem.innerText = fail;
+      if (passElem) passElem.innerText = pass;
+      if (restElem) restElem.innerText = rest;
     });
   }
 
@@ -780,8 +786,7 @@
     
     let txt = "";
     defaultWords.forEach(w => {
-      txt += `${w.player}|${w.letter}|${w.clue}|${w.answer}
-`;
+      txt += `${w.player}|${w.letter}|${w.clue}|${w.answer}\n`;
     });
     document.getElementById('customWordsTextarea').value = txt.trim();
   }
@@ -791,8 +796,7 @@
   }
 
   function saveCustomWords() {
-    const rawLines = document.getElementById('customWordsTextarea').value.split('
-');
+    const rawLines = document.getElementById('customWordsTextarea').value.split('\n');
     let parsedWords = [];
     
     rawLines.forEach(line => {
