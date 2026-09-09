@@ -132,7 +132,7 @@ el('btnConnect').addEventListener('click', async () => {
       el('pairScreen').style.display = 'none';
       el('camScreen').style.display = 'block';
       requestWakeLock();
-      primeMicrophone();
+      startCamListening();
 
       // El canal de datos ya está abierto; ahora sí lanzamos la llamada de vídeo
       call = peer.call(hostId, stream);
@@ -158,12 +158,14 @@ el('btnConnect').addEventListener('click', async () => {
 });
 
 // ---------- Reconocimiento de voz (micrófono de este móvil) ----------
+let shouldListen = false;
+
 function setupCamRecognition(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){ el('micStatusLine').textContent = '⚠️ Este navegador no soporta reconocimiento de voz.'; return null; }
   const r = new SR();
-  r.lang = 'es-ES'; r.continuous = false; r.interimResults = true;
-  r.onstart = () => { el('micStatusLine').textContent = '🎙 Escuchando…'; dataConn?.send({type:'listening'}); };
+  r.lang = 'es-ES'; r.continuous = true; r.interimResults = true;
+  r.onstart = () => { el('micStatusLine').textContent = '🎙 Escuchando (continuo)…'; dataConn?.send({type:'listening'}); };
   r.onresult = (e) => {
     let t = '';
     for(let i=e.resultIndex; i<e.results.length; i++) t += e.results[i][0].transcript;
@@ -171,25 +173,24 @@ function setupCamRecognition(){
     dataConn?.send({ type:'transcript', text: t, isFinal: e.results[e.results.length-1].isFinal });
   };
   r.onerror = () => { dataConn?.send({type:'error'}); };
-  r.onend = () => { el('micStatusLine').textContent = '🎤 Micrófono listo'; dataConn?.send({type:'listeningEnded'}); };
+  r.onend = () => {
+    el('micStatusLine').textContent = '🎤 Micrófono listo';
+    dataConn?.send({type:'listeningEnded'});
+    // El reconocimiento continuo a veces se corta solo (silencio largo, error de red);
+    // si seguimos en juego, lo reactivamos automáticamente sin que nadie lo note.
+    if(shouldListen){ setTimeout(() => { try{ camRecognition.start(); }catch(e){} }, 300); }
+  };
   return r;
 }
 function startCamListening(){
+  shouldListen = true;
   if(!camRecognition) camRecognition = setupCamRecognition();
   if(!camRecognition) return;
-  try{ camRecognition.start(); }catch(e){}
+  try{ camRecognition.start(); }catch(e){ /* ya estaba escuchando, no pasa nada */ }
 }
 function stopCamListening(){
+  shouldListen = false;
   try{ camRecognition && camRecognition.stop(); }catch(e){}
-}
-function primeMicrophone(){
-  // Pide el permiso de micrófono con antelación para que no interrumpa la primera pregunta
-  if(!camRecognition) camRecognition = setupCamRecognition();
-  if(!camRecognition) return;
-  try{
-    camRecognition.start();
-    setTimeout(() => { try{ camRecognition.stop(); }catch(e){} }, 300);
-  }catch(e){}
 }
 
 el('btnFlip').addEventListener('click', async () => {
