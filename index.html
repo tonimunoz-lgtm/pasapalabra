@@ -3,27 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <title>Rosco con voz</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
   :root{
-    --bg: #0e1526;
-    --bg-panel: #141d33;
-    --bg-panel-2: #1b2540;
-    --gold: #e8b34c;
-    --gold-dim: #a97f2f;
-    --cream: #f4ecd8;
-    --muted: #8a93ab;
-    --green: #4fd18b;
-    --red: #f2646b;
-    --line: #2a3555;
+    --bg: #0e1526; --bg-panel: #141d33; --bg-panel-2: #1b2540;
+    --gold: #e8b34c; --gold-dim: #a97f2f; --cream: #f4ecd8; --muted: #8a93ab;
+    --green: #4fd18b; --red: #f2646b; --line: #2a3555;
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   }
   *{ box-sizing: border-box; }
   body{
-    margin:0;
-    background: radial-gradient(1400px 800px at 50% -10%, #1a2544 0%, var(--bg) 60%);
-    color: var(--cream);
-    min-height:100vh;
-    padding: 24px 24px 50px;
+    margin:0; background: radial-gradient(1400px 800px at 50% -10%, #1a2544 0%, var(--bg) 60%);
+    color: var(--cream); min-height:100vh; padding: 24px 24px 50px;
   }
   .wrap{ max-width: 1500px; margin: 0 auto; }
   header{ text-align:center; margin-bottom: 18px; }
@@ -31,17 +22,9 @@
   header h1 span{ color: var(--gold); }
   header p{ margin:0; color: var(--muted); font-size: .85rem; }
 
-  .panel{
-    background: var(--bg-panel);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 16px 18px;
-  }
+  .panel{ background: var(--bg-panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
 
-  .controls{
-    display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center;
-    margin-bottom: 16px;
-  }
+  .controls{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; margin-bottom: 14px; }
   button{
     font: inherit; font-weight: 600; font-size: .85rem;
     border: 1px solid var(--line); background: var(--bg-panel-2); color: var(--cream);
@@ -59,39 +42,38 @@
   .timer{ font-variant-numeric: tabular-nums; font-size: 1.6rem; font-weight: 700; color: var(--gold); min-width: 84px; text-align:center; }
   select{ font: inherit; background: var(--bg-panel-2); color: var(--cream); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
 
-  /* ---- Stage: big rosco + slim sidebar ---- */
-  .stage{
-    display:grid;
-    grid-template-columns: 1fr 300px;
-    gap: 20px;
-    align-items: start;
-  }
-  @media (max-width: 980px){ .stage{ grid-template-columns: 1fr; } }
+  .statusbar{ display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; margin-bottom: 14px; font-size:.78rem; color: var(--muted); }
+  .mic-row{ display:flex; align-items:center; gap:10px; }
+  .mic-dot{ width: 12px; height:12px; border-radius:50%; background: var(--line); flex-shrink:0; }
+  .mic-dot.listening{ background: var(--red); animation: pulse 1.2s infinite; }
+  @keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(242,100,107,.5);} 70%{box-shadow:0 0 0 10px rgba(242,100,107,0);} 100%{box-shadow:0 0 0 0 rgba(242,100,107,0);} }
+  .legend-inline{ display:flex; gap:14px; flex-wrap:wrap; }
+  .legend-inline b{ color: var(--cream); }
+  .pair-indicator{ color: var(--green); font-weight:600; }
 
-  .rosco-panel{ display:flex; justify-content:center; padding: 32px; }
-  .rosco-holder{
-    position:relative;
-    width: min(78vh, 78vw, 760px);
-    aspect-ratio: 1 / 1;
+  .turn-banner{
+    text-align:center; font-weight:700; font-size:1.15rem; color: var(--gold);
+    background: var(--bg-panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px; margin-bottom: 14px; display:none;
   }
+
+  /* ---- Stage (1 player) ---- */
+  .stage{ display:grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+  @media (max-width: 980px){ .stage{ grid-template-columns: 1fr; } }
+  .rosco-panel{ display:flex; justify-content:center; padding: 32px; }
+  .rosco-holder{ position:relative; width: min(78vh, 78vw, 760px); aspect-ratio: 1 / 1; }
+  .rosco-holder.small{ width: min(50vh, 42vw, 480px); padding: 18px; }
+
   .letter{
-    position:absolute;
-    width: clamp(38px, 4.6vw, 58px);
-    height: clamp(38px, 4.6vw, 58px);
-    left:0; top:0;
-    border-radius: 50%;
-    display:flex; align-items:center; justify-content:center;
+    position:absolute; width: clamp(38px, 4.6vw, 58px); height: clamp(38px, 4.6vw, 58px); left:0; top:0;
+    border-radius: 50%; display:flex; align-items:center; justify-content:center;
     font-weight: 700; font-size: clamp(1rem, 1.6vw, 1.3rem);
-    background: var(--bg-panel-2); border: 2px solid var(--line);
-    color: var(--muted);
+    background: var(--bg-panel-2); border: 2px solid var(--line); color: var(--muted);
     transform: translate(-50%,-50%);
     transition: background .2s ease, border-color .2s ease, color .2s ease, transform .2s ease;
   }
-  .letter.current{
-    background: var(--gold); border-color: var(--gold); color:#231705;
-    transform: translate(-50%,-50%) scale(1.22);
-    box-shadow: 0 0 0 8px rgba(232,179,76,.16);
-  }
+  .rosco-holder.small .letter{ width: clamp(26px, 3vw, 40px); height: clamp(26px, 3vw, 40px); font-size: clamp(.75rem, 1vw, .95rem); }
+  .letter.current{ background: var(--gold); border-color: var(--gold); color:#231705; transform: translate(-50%,-50%) scale(1.22); box-shadow: 0 0 0 8px rgba(232,179,76,.16); }
   .letter.correct{ background: var(--green); border-color: var(--green); color:#082818; }
   .letter.wrong{ background: var(--red); border-color: var(--red); color:#2b0508; }
   .letter.passed{ border-color: var(--gold-dim); color: var(--gold-dim); }
@@ -99,73 +81,64 @@
   .rosco-center{
     position:absolute; inset: 21%; border-radius:50%;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    background: var(--bg-panel); border: 1px solid var(--line);
-    text-align:center; padding: 4%;
+    background: var(--bg-panel); border: 1px solid var(--line); text-align:center; padding: 4%;
   }
   .rc-letter{ font-size: clamp(2.2rem, 5vw, 3.4rem); font-weight: 800; color: var(--gold); line-height:1; margin-bottom: .4em; }
   .rc-clue{ font-size: clamp(.95rem, 1.6vw, 1.3rem); line-height:1.45; max-width: 90%; }
   .rc-status{ margin-top: .8em; font-size: clamp(.7rem, 1.1vw, .85rem); color: var(--muted); }
   .rc-idle{ color: var(--muted); font-size: clamp(1rem, 1.8vw, 1.4rem); }
+  .rosco-holder.small .rc-letter{ font-size: clamp(1.5rem, 3vw, 2.2rem); }
+  .rosco-holder.small .rc-clue{ font-size: clamp(.78rem, 1.3vw, 1.02rem); }
 
-  /* ---- Sidebar ---- */
-  .sidebar{ display:flex; flex-direction:column; gap: 14px; }
   .stat-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .stat{
-    background: var(--bg-panel-2); border: 1px solid var(--line); border-radius: 10px;
-    padding: 12px 8px; text-align:center;
-  }
+  .stat{ background: var(--bg-panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 8px; text-align:center; }
   .stat .n{ font-size: 1.5rem; font-weight: 800; color: var(--cream); }
   .stat .l{ font-size: .68rem; color: var(--muted); letter-spacing:.03em; margin-top: 2px; }
   .stat.green .n{ color: var(--green); }
   .stat.red .n{ color: var(--red); }
   .stat.gold .n{ color: var(--gold); }
 
-  .mic-row{ display:flex; align-items:center; gap:10px; }
-  .mic-dot{ width: 12px; height:12px; border-radius:50%; background: var(--line); flex-shrink:0; }
-  .mic-dot.listening{ background: var(--red); animation: pulse 1.2s infinite; }
-  @keyframes pulse{
-    0%{ box-shadow: 0 0 0 0 rgba(242,100,107,.5); }
-    70%{ box-shadow: 0 0 0 10px rgba(242,100,107,0); }
-    100%{ box-shadow: 0 0 0 0 rgba(242,100,107,0); }
-  }
-  .mic-status{ font-size: .8rem; color: var(--muted); }
+  /* ---- Stage (2 players) ---- */
+  .stage2p .two-col{ display:grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 900px){ .stage2p .two-col{ grid-template-columns: 1fr; } }
+  .player-col{ display:flex; flex-direction:column; gap: 10px; }
+  .player-label{ text-align:center; font-weight:700; color: var(--gold); font-size: .95rem; }
 
-  .legend{ font-size: .72rem; color: var(--muted); line-height: 1.6; }
-  .legend b{ color: var(--cream); }
+  .player-turn-tag{ text-align:center; color: var(--gold); font-weight:700; margin-bottom:8px; display:none; }
 
-  /* ---- Bottom answer bar ---- */
-  .answer-panel{ margin-top: 18px; }
+  .answer-panel{ margin-top: 6px; }
   .answer-row{ display:flex; gap: 14px; align-items:stretch; flex-wrap: wrap; }
-  .answer-box{
-    flex: 1 1 320px;
-    background: var(--bg-panel-2); border: 1px dashed var(--line);
-    border-radius: 10px; padding: 14px 16px; min-height: 30px;
-    font-size: 1.15rem; display:flex; align-items:center;
-  }
+  .answer-box{ flex: 1 1 320px; background: var(--bg-panel-2); border: 1px dashed var(--line); border-radius: 10px; padding: 14px 16px; min-height: 30px; font-size: 1.15rem; display:flex; align-items:center; }
   .answer-box.correct{ border-color: var(--green); background: rgba(79,209,139,.08); }
   .answer-box.wrong{ border-color: var(--red); background: rgba(242,100,107,.08); }
   .answer-box.reveal{ border-color: var(--gold); background: rgba(232,179,76,.08); }
   .answer-box .placeholder{ color: var(--muted); font-style: italic; font-size:.9rem; }
-
-  .verdict-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .verdict-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top: 12px; }
   .verdict-row button{ flex: 1 1 130px; }
 
-  textarea{
-    width:100%; min-height: 220px; background: var(--bg-panel-2); color: var(--cream);
-    border: 1px solid var(--line); border-radius: 10px; padding: 12px; font: 13px/1.5 monospace;
-    resize: vertical;
-  }
+  textarea{ width:100%; min-height: 220px; background: var(--bg-panel-2); color: var(--cream); border: 1px solid var(--line); border-radius: 10px; padding: 12px; font: 13px/1.5 monospace; resize: vertical; }
   .edit-help{ font-size:.78rem; color: var(--muted); margin: 6px 0 10px; }
   .edit-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top: 10px; }
+  .edittabs{ display:flex; gap:8px; margin-bottom: 10px; }
+  .tabbtn{ padding: 6px 12px; font-size: .78rem; }
+  .tabbtn.active{ border-color: var(--gold); color: var(--gold); }
 
   .hint{ text-align:center; color: var(--muted); font-size:.75rem; margin-top: 16px; }
-  .modal-backdrop{
-    position:fixed; inset:0; background: rgba(6,9,18,.72); display:none;
-    align-items:center; justify-content:center; padding: 20px; z-index: 50;
-  }
+  .modal-backdrop{ position:fixed; inset:0; background: rgba(6,9,18,.72); display:none; align-items:center; justify-content:center; padding: 20px; z-index: 50; }
   .modal-backdrop.open{ display:flex; }
   .modal{ background: var(--bg-panel); border:1px solid var(--line); border-radius:14px; padding:20px; max-width: 640px; width:100%; }
   .modal h2{ margin-top:0; font-size:1.05rem; }
+  .paircode{ font-size: 3rem; font-weight: 800; letter-spacing: .12em; color: var(--gold); text-align:center; margin: 14px 0; }
+
+  #btnExitFullscreen{ display:none; position:fixed; top:16px; right:16px; z-index:60; }
+
+  body.fullscreen-active header,
+  body.fullscreen-active .controls,
+  body.fullscreen-active .statusbar,
+  body.fullscreen-active .turn-banner,
+  body.fullscreen-active .answer-panel,
+  body.fullscreen-active .hint{ display:none !important; }
+  body.fullscreen-active{ padding: 14px; }
 </style>
 </head>
 <body>
@@ -187,48 +160,39 @@
       <option value="180">3:00 min</option>
       <option value="240">4:00 min</option>
     </select>
+    <select id="modeSelect">
+      <option value="1" selected>1 jugador</option>
+      <option value="2">2 jugadores</option>
+    </select>
+    <button id="btnLink" class="ghost">🔗 Vincular móvil</button>
+    <button id="btnFullscreen" class="ghost">⛶ Pantalla completa</button>
   </div>
 
-  <div class="stage" style="margin-top:16px;">
-    <div class="panel rosco-panel">
-      <div class="rosco-holder" id="rosco">
-        <div class="rosco-center" id="roscoCenter">
-          <div class="rc-idle">Pulsa <b>Empezar</b><br>para jugar</div>
-        </div>
-      </div>
+  <div class="panel statusbar">
+    <div class="mic-row">
+      <div class="mic-dot" id="micDot"></div>
+      <div class="mic-status" id="micStatus">Micrófono inactivo</div>
     </div>
-
-    <div class="sidebar">
-      <div class="panel">
-        <div class="stat-grid">
-          <div class="stat green"><div class="n" id="stCorrect">0</div><div class="l">ACIERTOS</div></div>
-          <div class="stat red"><div class="n" id="stWrong">0</div><div class="l">FALLOS</div></div>
-          <div class="stat gold"><div class="n" id="stPass">0</div><div class="l">PASADAS</div></div>
-          <div class="stat"><div class="n" id="stLeft">27</div><div class="l">RESTANTES</div></div>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="mic-row">
-          <div class="mic-dot" id="micDot"></div>
-          <div class="mic-status" id="micStatus">Micrófono inactivo</div>
-        </div>
-      </div>
-      <div class="panel legend">
-        <div><b>Enter</b> = correcta</div>
-        <div><b>X</b> = incorrecta</div>
-        <div><b>Espacio</b> = pasapalabra</div>
-        <div><b>S</b> = ver respuesta</div>
-        <div><b>Ctrl+R</b> = reiniciar</div>
-        <div style="margin-top:6px;">Requiere Chrome o Edge + micrófono.</div>
-      </div>
+    <div class="legend-inline">
+      <span><b>Enter</b> correcta</span>
+      <span><b>X</b> incorrecta</span>
+      <span><b>Espacio</b> pasapalabra</span>
+      <span><b>S</b> ver respuesta</span>
+      <span><b>Ctrl+R</b> reiniciar</span>
     </div>
+    <div class="pair-indicator" id="pairIndicator"></div>
   </div>
+
+  <div class="turn-banner" id="turnBanner"></div>
+
+  <div id="stageArea"></div>
 
   <div class="panel answer-panel">
+    <div id="activePlayerLabel" class="player-turn-tag"></div>
     <div class="answer-row">
       <div class="answer-box" id="answerBox"><span class="placeholder">Aquí aparecerá lo que digas…</span></div>
     </div>
-    <div class="verdict-row" style="margin-top:12px;">
+    <div class="verdict-row">
       <button id="btnCorrect" class="primary" disabled>✔ Correcta (Enter)</button>
       <button id="btnWrong" class="danger" disabled>✘ Incorrecta (X)</button>
       <button id="btnPass" class="ghost" disabled>⏭ Pasapalabra (Espacio)</button>
@@ -237,18 +201,31 @@
     </div>
   </div>
 
-  <p class="hint">Formato de edición: LETRA|PREGUNTA|RESPUESTA, una línea por letra.</p>
+  <p class="hint">Formato de edición: LETRA|PREGUNTA|RESPUESTA, una línea por letra. En modo 2 jugadores, si un jugador falla o pasa, el turno salta al otro.</p>
 </div>
+
+<button id="btnExitFullscreen">Salir ⤢</button>
 
 <div class="modal-backdrop" id="editBackdrop">
   <div class="modal">
     <h2>Editar palabras del rosco</h2>
     <div class="edit-help">Una línea por letra, formato: <b>LETRA|PREGUNTA|RESPUESTA</b>. Las líneas mal escritas se ignoran.</div>
+    <div class="edittabs" id="editTabs"></div>
     <textarea id="wordsArea"></textarea>
     <div class="edit-actions">
       <button id="btnCancelEdit" class="ghost">Cancelar</button>
       <button id="btnSaveEdit" class="primary">Guardar</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="linkBackdrop">
+  <div class="modal">
+    <h2>Vincular móvil</h2>
+    <div class="edit-help">Abre <b>controls.html</b> en el navegador del móvil (misma carpeta / mismo dominio que esta página) e introduce este código. Ambos dispositivos necesitan conexión a internet.</div>
+    <div class="paircode" id="pairCodeDisplay">----</div>
+    <div class="mic-status" id="pairStatus" style="text-align:center;">Generando código…</div>
+    <div class="edit-actions"><button id="btnCloseLink" class="ghost">Cerrar</button></div>
   </div>
 </div>
 
@@ -282,18 +259,27 @@ const DEFAULT_WORDS = [
 ["Z","Empieza por Z: Animal que se parece a un perro y vive en manadas","zorro"],
 ];
 
+const el = (id) => document.getElementById(id);
+
+function makePlayer(name, list){
+  return { name, words: list.map(([letter,clue,answer])=>({letter,clue,answer,status:"pending"})), idx:0, correct:0, wrong:0, pass:0 };
+}
+
 // ---------- Estado ----------
-let words = [];
-let idx = 0;
+let players = [ makePlayer('Jugador 1', DEFAULT_WORDS) ];
+let gameMode = 1;
+let active = 0;
 let timeLeft = 150;
 let timerId = null;
 let running = false;
-let correctCount = 0, wrongCount = 0, passCount = 0;
 let recognition = null;
 let recognizing = false;
+let peer = null, mobileConn = null, pairCode = null;
+let edDraft = ['',''], edTab = 0;
 
-const el = (id) => document.getElementById(id);
+function currentPlayer(){ return players[active]; }
 
+// ---------- Utilidades de texto ----------
 function normalize(s){
   return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zñ0-9\s]/g,"").trim();
 }
@@ -315,7 +301,6 @@ function levenshtein(a,b){
       dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j-1],dp[i-1][j],dp[i][j-1]);
   return dp[m][n];
 }
-
 function parseWords(text){
   const out = [];
   text.split("\n").forEach(line=>{
@@ -330,22 +315,72 @@ function parseWords(text){
   return out;
 }
 function wordsToText(list){ return list.map(w=>`${w.letter}|${w.clue}|${w.answer}`).join("\n"); }
-function loadDefault(){ words = DEFAULT_WORDS.map(([letter,clue,answer])=>({letter,clue,answer,status:"pending"})); }
-loadDefault();
+function escapeHtml(s){ return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function hasPending(p){ return p.words.some(w=>w.status==='pending'); }
+function nextPendingIndex(p, from){
+  const n = p.words.length;
+  for(let step=1; step<=n; step++){
+    const i = (from+step) % n;
+    if(p.words[i].status === 'pending') return i;
+  }
+  return -1;
+}
 
-// ---------- Rosco visual ----------
-function layoutRosco(){
-  const holder = el('rosco');
+// ---------- Construcción del escenario ----------
+function renderStage(){
+  const area = el('stageArea');
+  if(gameMode === 1){
+    area.className = 'stage';
+    area.innerHTML = `
+      <div class="panel rosco-panel"><div class="rosco-holder" id="rosco-0">
+        <div class="rosco-center" id="roscoCenter-0"><div class="rc-idle">Pulsa <b>Empezar</b><br>para jugar</div></div>
+      </div></div>
+      <div class="panel"><div class="stat-grid" id="stats-0">
+        <div class="stat green"><div class="n" id="stCorrect-0">0</div><div class="l">ACIERTOS</div></div>
+        <div class="stat red"><div class="n" id="stWrong-0">0</div><div class="l">FALLOS</div></div>
+        <div class="stat gold"><div class="n" id="stPass-0">0</div><div class="l">PASADAS</div></div>
+        <div class="stat"><div class="n" id="stLeft-0">${players[0].words.length}</div><div class="l">RESTANTES</div></div>
+      </div></div>`;
+    el('turnBanner').style.display = 'none';
+  } else {
+    area.className = 'stage2p';
+    area.innerHTML = `<div class="two-col">${[0,1].map(i=>`
+      <div class="player-col">
+        <div class="player-label">${players[i].name}</div>
+        <div class="panel rosco-panel"><div class="rosco-holder small" id="rosco-${i}">
+          <div class="rosco-center" id="roscoCenter-${i}"><div class="rc-idle">Esperando<br>inicio</div></div>
+        </div></div>
+        <div class="panel"><div class="stat-grid" id="stats-${i}">
+          <div class="stat green"><div class="n" id="stCorrect-${i}">0</div><div class="l">ACIERTOS</div></div>
+          <div class="stat red"><div class="n" id="stWrong-${i}">0</div><div class="l">FALLOS</div></div>
+          <div class="stat gold"><div class="n" id="stPass-${i}">0</div><div class="l">PASADAS</div></div>
+          <div class="stat"><div class="n" id="stLeft-${i}">${players[i].words.length}</div><div class="l">RESTANTES</div></div>
+        </div></div>
+      </div>`).join('')}</div>`;
+    el('turnBanner').style.display = 'block';
+    el('turnBanner').textContent = `🎙 Turno: ${players[0].name}`;
+  }
+  const idxs = gameMode===2 ? [0,1] : [0];
+  idxs.forEach(layoutRosco);
+  refreshAllStats();
+  refreshAllRoscos();
+  updateAnswerAreaVisibility();
+}
+
+function layoutRosco(i){
+  const holder = el('rosco-'+i);
+  if(!holder) return;
   holder.querySelectorAll('.letter').forEach(n=>n.remove());
+  const words = players[i].words;
   const n = words.length;
-  const Rpct = 42; // % del contenedor
-  words.forEach((w,i)=>{
-    const angle = (i/n)*2*Math.PI - Math.PI/2;
+  const Rpct = 42;
+  words.forEach((w,k)=>{
+    const angle = (k/n)*2*Math.PI - Math.PI/2;
     const x = 50 + Rpct*Math.cos(angle);
     const y = 50 + Rpct*Math.sin(angle);
     const d = document.createElement('div');
     d.className = 'letter';
-    d.id = 'L'+i;
+    d.id = `L-${i}-${k}`;
     d.textContent = w.letter;
     d.style.left = x+'%';
     d.style.top = y+'%';
@@ -353,47 +388,52 @@ function layoutRosco(){
   });
 }
 
-function refreshRosco(){
-  words.forEach((w,i)=>{
-    const d = el('L'+i);
+function refreshRosco(i){
+  const p = players[i];
+  if(!p) return;
+  p.words.forEach((w,k)=>{
+    const d = el(`L-${i}-${k}`);
     if(!d) return;
-    d.className = 'letter ' + (i===idx && running ? 'current' : '') + ' ' + w.status;
+    d.className = 'letter ' + (i===active && k===p.idx && running ? 'current' : '') + ' ' + w.status;
   });
-  const left = words.filter(w=>w.status==='pending').length;
-  el('stLeft').textContent = left;
 }
+function refreshAllRoscos(){ const idxs = gameMode===2 ? [0,1] : [0]; idxs.forEach(refreshRosco); }
 
-function updateScore(){
-  el('stCorrect').textContent = correctCount;
-  el('stWrong').textContent = wrongCount;
-  el('stPass').textContent = passCount;
+function refreshStats(i){
+  const p = players[i];
+  if(!p || !el(`stCorrect-${i}`)) return;
+  el(`stCorrect-${i}`).textContent = p.correct;
+  el(`stWrong-${i}`).textContent = p.wrong;
+  el(`stPass-${i}`).textContent = p.pass;
+  el(`stLeft-${i}`).textContent = p.words.filter(w=>w.status==='pending').length;
+}
+function refreshAllStats(){ const idxs = gameMode===2 ? [0,1] : [0]; idxs.forEach(refreshStats); }
+
+function updateAnswerAreaVisibility(){
+  el('activePlayerLabel').style.display = gameMode===2 ? 'block' : 'none';
 }
 
 // ---------- Turnos ----------
-function nextPendingIndex(from){
-  const n = words.length;
-  for(let step=1; step<=n; step++){
-    const i = (from+step) % n;
-    if(words[i].status === 'pending') return i;
-  }
-  return -1;
-}
-
 function startTurn(){
   if(!running) return;
+  const p = currentPlayer();
+  const w = p.words[p.idx];
   el('answerBox').className = 'answer-box';
   el('answerBox').innerHTML = '<span class="placeholder">Escuchando… habla cuando oigas la pregunta</span>';
   setVerdictButtons(false);
-  const w = words[idx];
-  el('roscoCenter').innerHTML = `
+  const center = el(`roscoCenter-${active}`);
+  if(center) center.innerHTML = `
     <div class="rc-letter">${w.letter}</div>
     <div class="rc-clue">${escapeHtml(w.clue)}</div>
     <div class="rc-status" id="rcStatus">Escuchando…</div>`;
-  refreshRosco();
+  if(gameMode===2){
+    el('turnBanner').textContent = `🎙 Turno: ${p.name}`;
+    el('activePlayerLabel').textContent = p.name;
+  }
+  refreshAllRoscos();
+  pushState();
   speak(`${w.letter}. ${w.clue}`, () => { if(running) startListening(); });
 }
-
-function escapeHtml(s){ return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 function speak(text, onEnd){
   if(!('speechSynthesis' in window)){ if(onEnd) onEnd(); return; }
@@ -407,17 +447,10 @@ function speak(text, onEnd){
 // ---------- Reconocimiento de voz ----------
 function setupRecognition(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){
-    el('micStatus').textContent = 'Este navegador no soporta reconocimiento de voz (usa Chrome o Edge).';
-    return null;
-  }
+  if(!SR){ el('micStatus').textContent = 'Este navegador no soporta reconocimiento de voz (usa Chrome o Edge).'; return null; }
   const r = new SR();
   r.lang = 'es-ES'; r.continuous = false; r.interimResults = true;
-  r.onstart = () => {
-    recognizing = true;
-    el('micDot').classList.add('listening');
-    el('micStatus').textContent = 'Escuchando tu respuesta…';
-  };
+  r.onstart = () => { recognizing = true; el('micDot').classList.add('listening'); el('micStatus').textContent = 'Escuchando tu respuesta…'; };
   r.onresult = (e) => {
     let transcript = '';
     for(let i=e.resultIndex; i<e.results.length; i++) transcript += e.results[i][0].transcript;
@@ -425,8 +458,7 @@ function setupRecognition(){
   };
   r.onerror = () => { el('micStatus').textContent = 'No se ha entendido bien, pulsa 🔊 para repetir o responde manualmente.'; };
   r.onend = () => {
-    recognizing = false;
-    el('micDot').classList.remove('listening');
+    recognizing = false; el('micDot').classList.remove('listening');
     if(running) el('micStatus').textContent = 'Micrófono en pausa · pulsa Repetir si no te ha oído';
   };
   return r;
@@ -440,7 +472,7 @@ function handleTranscript(transcript, isFinal){
   const clean = transcript.trim();
   if(!clean) return;
   if(normalize(clean).includes('pasapalabra')){ if(isFinal) doPass(); return; }
-  const w = words[idx];
+  const p = currentPlayer(); const w = p.words[p.idx];
   const isMatch = similar(clean, w.answer);
   el('answerBox').textContent = clean;
   el('answerBox').className = 'answer-box ' + (isMatch ? 'correct' : 'wrong');
@@ -450,6 +482,7 @@ function handleTranscript(transcript, isFinal){
   el('micStatus').textContent = isMatch
     ? 'Suena correcta · pulsa Correcta o Enter para confirmar'
     : 'No coincide · confirma manualmente si crees que es un error de dictado';
+  pushState();
 }
 
 function setVerdictButtons(enabled){
@@ -458,47 +491,90 @@ function setVerdictButtons(enabled){
   el('btnPass').disabled = !running;
   el('btnRepeat').disabled = !running;
   el('btnSolution').disabled = !running;
+  pushState();
 }
 
 function doReveal(){
   if(!running) return;
-  const w = words[idx];
+  const p = currentPlayer(); const w = p.words[p.idx];
   el('answerBox').className = 'answer-box reveal';
   el('answerBox').textContent = `Respuesta correcta: ${w.answer}`;
-  const rc = el('rcStatus');
-  if(rc) rc.textContent = 'Solución revelada';
-  el('btnCorrect').disabled = false;
-  el('btnWrong').disabled = false;
+  const rc = el('rcStatus'); if(rc) rc.textContent = 'Solución revelada';
+  el('btnCorrect').disabled = false; el('btnWrong').disabled = false;
+  pushState();
 }
 
 // ---------- Acciones de turno ----------
-function doCorrect(){ if(!running) return; words[idx].status='correct'; correctCount++; advance(); }
-function doWrong(){ if(!running) return; words[idx].status='wrong'; wrongCount++; advance(); }
-function doPass(){ if(!running) return; if(words[idx].status==='pending'){ words[idx].status='passed'; passCount++; } advance(); }
+function doCorrect(){ if(!running) return; const p=currentPlayer(); p.words[p.idx].status='correct'; p.correct++; advance(true); }
+function doWrong(){ if(!running) return; const p=currentPlayer(); p.words[p.idx].status='wrong'; p.wrong++; advance(false); }
+function doPass(){ if(!running) return; const p=currentPlayer(); if(p.words[p.idx].status==='pending'){ p.words[p.idx].status='passed'; p.pass++; } advance(false); }
 
-function advance(){
-  updateScore();
-  refreshRosco();
+function advance(keepTurn){
+  refreshAllStats(); refreshAllRoscos();
   if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
-  const next = nextPendingIndex(idx);
-  if(next === -1){ finishGame(); return; }
-  idx = next;
-  setTimeout(startTurn, 500);
+  const p = currentPlayer();
+  const nextOwn = nextPendingIndex(p, p.idx);
+
+  if(gameMode === 1){
+    if(nextOwn === -1){ finishGame(); return; }
+    p.idx = nextOwn;
+    setTimeout(startTurn, 500);
+    return;
+  }
+
+  // modo 2 jugadores
+  if(keepTurn){
+    if(nextOwn !== -1){ p.idx = nextOwn; setTimeout(startTurn, 500); return; }
+    const otherIdx = 1-active;
+    if(hasPending(players[otherIdx])){
+      active = otherIdx;
+      const np = currentPlayer();
+      np.idx = nextPendingIndex(np, np.idx);
+      setTimeout(startTurn, 500);
+    } else finishGame();
+  } else {
+    const otherIdx = 1-active;
+    if(hasPending(players[otherIdx])){
+      active = otherIdx;
+      const np = currentPlayer();
+      np.idx = nextPendingIndex(np, np.idx);
+      setTimeout(startTurn, 500);
+    } else if(nextOwn !== -1){
+      p.idx = nextOwn;
+      setTimeout(startTurn, 500);
+    } else finishGame();
+  }
 }
 
 function finishGame(){
   running = false;
   clearInterval(timerId);
-  el('roscoCenter').innerHTML = `<div class="rc-idle">Rosco terminado<br><span style="color:var(--gold)">${correctCount}</span> aciertos</div>`;
+  if(gameMode === 2){
+    const [p0,p1] = players;
+    let msg;
+    if(p0.correct > p1.correct) msg = `${p0.name} gana con ${p0.correct} aciertos frente a ${p1.correct}.`;
+    else if(p1.correct > p0.correct) msg = `${p1.name} gana con ${p1.correct} aciertos frente a ${p0.correct}.`;
+    else msg = `Empate a ${p0.correct} aciertos.`;
+    const c0 = el('roscoCenter-0'), c1 = el('roscoCenter-1');
+    if(c0) c0.innerHTML = `<div class="rc-idle">Terminado<br><span style="color:var(--gold)">${p0.correct}</span> aciertos</div>`;
+    if(c1) c1.innerHTML = `<div class="rc-idle">Terminado<br><span style="color:var(--gold)">${p1.correct}</span> aciertos</div>`;
+    el('turnBanner').textContent = msg;
+    speak(msg);
+  } else {
+    const p0 = players[0];
+    const c0 = el('roscoCenter-0');
+    if(c0) c0.innerHTML = `<div class="rc-idle">Rosco terminado<br><span style="color:var(--gold)">${p0.correct}</span> aciertos</div>`;
+    speak(`Rosco terminado. ${p0.correct} aciertos.`);
+  }
   el('micStatus').textContent = 'Micrófono inactivo';
   setVerdictButtons(false);
   toggleTopButtons(false);
-  speak(`Rosco terminado. ${correctCount} aciertos.`);
+  pushState();
 }
 
 // ---------- Temporizador ----------
 function formatTime(s){ const m=Math.floor(s/60), sec=s%60; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
-function tick(){ timeLeft--; el('timer').textContent = formatTime(Math.max(timeLeft,0)); if(timeLeft<=0) finishGame(); }
+function tick(){ timeLeft--; el('timer').textContent = formatTime(Math.max(timeLeft,0)); pushState(); if(timeLeft<=0) finishGame(); }
 
 // ---------- Botones principales ----------
 function toggleTopButtons(isRunning){
@@ -506,13 +582,17 @@ function toggleTopButtons(isRunning){
   el('btnPause').disabled = !isRunning;
   el('btnEdit').disabled = isRunning;
   el('secondsSelect').disabled = isRunning;
+  el('modeSelect').disabled = isRunning;
+}
+
+function resetAllPlayers(){
+  players.forEach(p=>{ p.words.forEach(w=>w.status='pending'); p.idx=0; p.correct=0; p.wrong=0; p.pass=0; });
+  active = 0;
 }
 
 el('btnStart').addEventListener('click', () => {
-  words.forEach(w=>w.status='pending');
-  correctCount=wrongCount=passCount=0;
-  updateScore();
-  idx = 0;
+  resetAllPlayers();
+  refreshAllStats(); refreshAllRoscos();
   timeLeft = parseInt(el('secondsSelect').value,10);
   el('timer').textContent = formatTime(timeLeft);
   running = true;
@@ -533,21 +613,21 @@ el('btnPause').addEventListener('click', () => {
     el('btnPause').textContent = '⏸ Pausa';
     startTurn();
   }
+  pushState();
 });
 
 el('btnRestart').addEventListener('click', () => {
   running = false; clearInterval(timerId); window.speechSynthesis.cancel();
   if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
-  words.forEach(w=>w.status='pending');
-  correctCount=wrongCount=passCount=0; idx = 0;
-  updateScore(); refreshRosco();
+  resetAllPlayers();
   el('timer').textContent = formatTime(parseInt(el('secondsSelect').value,10));
-  el('roscoCenter').innerHTML = '<div class="rc-idle">Pulsa <b>Empezar</b><br>para jugar</div>';
+  renderStage();
   el('answerBox').innerHTML = '<span class="placeholder">Aquí aparecerá lo que digas…</span>';
   el('micStatus').textContent = 'Micrófono inactivo';
   toggleTopButtons(false);
   el('btnPause').textContent = '⏸ Pausa';
   setVerdictButtons(false);
+  pushState();
 });
 
 el('btnCorrect').addEventListener('click', doCorrect);
@@ -555,41 +635,138 @@ el('btnWrong').addEventListener('click', doWrong);
 el('btnPass').addEventListener('click', doPass);
 el('btnRepeat').addEventListener('click', () => {
   if(!running) return;
-  const w = words[idx];
+  const p = currentPlayer(); const w = p.words[p.idx];
   if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
   speak(`${w.letter}. ${w.clue}`, () => { if(running) startListening(); });
 });
 el('btnSolution').addEventListener('click', doReveal);
 
+// ---------- Modo 1 / 2 jugadores ----------
+el('modeSelect').addEventListener('change', (e) => {
+  if(running) return;
+  const mode = parseInt(e.target.value,10);
+  gameMode = mode;
+  if(gameMode===2 && players.length<2) players.push(makePlayer('Jugador 2', DEFAULT_WORDS));
+  if(gameMode===1) players = [players[0]];
+  resetAllPlayers();
+  renderStage();
+});
+
 // ---------- Edición de palabras ----------
+function renderEditTabs(){
+  const wrap = el('editTabs');
+  if(gameMode!==2){ wrap.style.display='none'; return; }
+  wrap.style.display='flex';
+  wrap.innerHTML = players.map((p,i)=>`<button type="button" class="tabbtn ${i===edTab?'active':''}" data-i="${i}">${p.name}</button>`).join('');
+  wrap.querySelectorAll('button').forEach(b=>{
+    b.onclick = () => {
+      edDraft[edTab] = el('wordsArea').value;
+      edTab = parseInt(b.dataset.i,10);
+      el('wordsArea').value = edDraft[edTab];
+      renderEditTabs();
+    };
+  });
+}
 el('btnEdit').addEventListener('click', () => {
-  el('wordsArea').value = wordsToText(words);
+  edDraft[0] = wordsToText(players[0].words);
+  edDraft[1] = gameMode===2 ? wordsToText(players[1].words) : '';
+  edTab = 0;
+  el('wordsArea').value = edDraft[0];
+  renderEditTabs();
   el('editBackdrop').classList.add('open');
 });
 el('btnCancelEdit').addEventListener('click', () => el('editBackdrop').classList.remove('open'));
 el('btnSaveEdit').addEventListener('click', () => {
-  const parsed = parseWords(el('wordsArea').value);
-  if(parsed.length >= 3){
-    words = parsed; idx = 0;
-    layoutRosco(); refreshRosco();
+  edDraft[edTab] = el('wordsArea').value;
+  const parsed0 = parseWords(edDraft[0]);
+  if(parsed0.length >= 3) players[0].words = parsed0;
+  if(gameMode===2){
+    const parsed1 = parseWords(edDraft[1]);
+    if(parsed1.length >= 3) players[1].words = parsed1;
   }
+  players.forEach(p=>p.idx=0);
+  renderStage();
   el('editBackdrop').classList.remove('open');
 });
 
+function applyRemoteWords(text){
+  if(running) return;
+  const parsed = parseWords(text);
+  if(parsed.length >= 3){ players[active].words = parsed; renderStage(); }
+}
+
+// ---------- Vincular móvil (PeerJS) ----------
+function openLinkModal(){
+  pairCode = String(Math.floor(1000 + Math.random()*9000));
+  el('pairCodeDisplay').textContent = pairCode;
+  el('pairStatus').textContent = 'Generando código…';
+  el('linkBackdrop').classList.add('open');
+  if(peer){ try{ peer.destroy(); }catch(e){} }
+  peer = new Peer('rosco-'+pairCode);
+  peer.on('open', () => { el('pairStatus').textContent = 'Esperando conexión del móvil…'; });
+  peer.on('connection', (conn) => {
+    mobileConn = conn;
+    el('pairStatus').textContent = '📱 Móvil conectado';
+    el('pairIndicator').textContent = '📱 Móvil conectado';
+    conn.on('data', handleRemoteCommand);
+    conn.on('close', () => { mobileConn = null; el('pairIndicator').textContent = ''; });
+    pushState();
+  });
+  peer.on('error', (err) => { el('pairStatus').textContent = 'Error: ' + err.type + ' (revisa la conexión a internet)'; });
+}
+el('btnLink').addEventListener('click', openLinkModal);
+el('btnCloseLink').addEventListener('click', () => el('linkBackdrop').classList.remove('open'));
+
+function handleRemoteCommand(msg){
+  if(!msg || !msg.type) return;
+  switch(msg.type){
+    case 'start': if(!el('btnStart').disabled) el('btnStart').click(); break;
+    case 'pause': if(!el('btnPause').disabled) el('btnPause').click(); break;
+    case 'restart': el('btnRestart').click(); break;
+    case 'correct': if(!el('btnCorrect').disabled) doCorrect(); break;
+    case 'wrong': if(!el('btnWrong').disabled) doWrong(); break;
+    case 'pass': if(!el('btnPass').disabled) doPass(); break;
+    case 'repeat': if(!el('btnRepeat').disabled) el('btnRepeat').click(); break;
+    case 'reveal': if(!el('btnSolution').disabled) doReveal(); break;
+    case 'setWords': applyRemoteWords(msg.text); break;
+  }
+}
+function pushState(){
+  if(!mobileConn || !mobileConn.open) return;
+  const p = currentPlayer();
+  mobileConn.send({
+    type: 'state',
+    running,
+    timerText: formatTime(Math.max(timeLeft,0)),
+    turnLabel: gameMode===2 ? `Turno: ${p.name}` : '',
+    verdictReady: !el('btnCorrect').disabled,
+    micStatus: el('micStatus').textContent
+  });
+}
+
+// ---------- Pantalla completa ----------
+function setFullscreen(on){
+  document.body.classList.toggle('fullscreen-active', on);
+  el('btnExitFullscreen').style.display = on ? 'inline-block' : 'none';
+  if(on){ document.documentElement.requestFullscreen?.().catch(()=>{}); }
+  else if(document.fullscreenElement){ document.exitFullscreen?.(); }
+}
+el('btnFullscreen').addEventListener('click', () => setFullscreen(true));
+el('btnExitFullscreen').addEventListener('click', () => setFullscreen(false));
+document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement) setFullscreen(false); });
+
 // ---------- Atajos de teclado ----------
 document.addEventListener('keydown', (e) => {
-  if(el('editBackdrop').classList.contains('open')) return;
+  if(el('editBackdrop').classList.contains('open') || el('linkBackdrop').classList.contains('open')) return;
   if(e.key === 'Enter' && !el('btnCorrect').disabled) doCorrect();
   else if((e.key === 'x' || e.key === 'X') && !el('btnWrong').disabled) doWrong();
   else if(e.key === ' ' && running){ e.preventDefault(); doPass(); }
-  else if((e.key === 's' || e.key === 'S') && running && !e.ctrlKey){ doReveal(); }
+  else if((e.key === 's' || e.key === 'S') && running && !e.ctrlKey) doReveal();
   else if(e.ctrlKey && (e.key === 'r' || e.key === 'R')){ e.preventDefault(); el('btnRestart').click(); }
 });
 
 // ---------- Init ----------
-layoutRosco();
-refreshRosco();
-updateScore();
+renderStage();
 el('timer').textContent = formatTime(parseInt(el('secondsSelect').value,10));
 </script>
 </body>
