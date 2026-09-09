@@ -645,10 +645,11 @@
     return `${m}:${s}`;
   }
 
-  function updateScoreboardUI() {
+   function updateScoreboardUI() {
     const targetPlayers =;
     targetPlayers.forEach(p => {
       if (!playersData[p] || !playersData[p].states) return;
+
       
       const timeEl = document.getElementById(`p${p}Time`);
       if (timeEl) timeEl.innerText = formatTime(playersData[p].time);
