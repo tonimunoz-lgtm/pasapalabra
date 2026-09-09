@@ -2,578 +2,387 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Rosco con voz</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador del Rosco Ganador - Pasapalabra</title>
 <style>
-  :root{
-    --bg: #0e1526;
-    --bg-panel: #141d33;
-    --bg-panel-2: #1b2540;
-    --gold: #e8b34c;
-    --gold-dim: #a97f2f;
-    --cream: #f4ecd8;
-    --muted: #8a93ab;
-    --green: #4fd18b;
-    --red: #f2646b;
-    --line: #2a3555;
+  :root {
+    --bg-main: #060d22;
+    --bg-gradient: radial-gradient(circle at center, #112554 0%, #060c1f 80%);
+    --panel-blue: rgba(16, 28, 59, 0.6);
+    --panel-border: rgba(43, 67, 126, 0.4);
+    --blue-bright: #3b82f6;
+    --blue-glow: #1d4ed8;
+    --text-white: #ffffff;
+    --text-muted: #8fa0cd;
+    --green-btn: #10b981;
+    --yellow-btn: #f59e0b;
+    --red-btn: #ef4444;
+    --btn-dark: #1e293b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  }
-  *{ box-sizing: border-box; }
-  body{
-    margin:0;
-    background: radial-gradient(1400px 800px at 50% -10%, #1a2544 0%, var(--bg) 60%);
-    color: var(--cream);
-    min-height:100vh;
-    padding: 24px 24px 50px;
-  }
-  .wrap{ max-width: 1500px; margin: 0 auto; }
-  header{ text-align:center; margin-bottom: 18px; }
-  header h1{ font-size: 1.6rem; letter-spacing: .02em; margin: 0 0 4px; font-weight: 700; }
-  header h1 span{ color: var(--gold); }
-  header p{ margin:0; color: var(--muted); font-size: .85rem; }
-
-  .panel{
-    background: var(--bg-panel);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 16px 18px;
+    background: var(--bg-main);
+    background-image: var(--bg-gradient);
+    color: var(--text-white);
+    min-height: 100vh;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
   }
 
-  .controls{
-    display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center;
-    margin-bottom: 16px;
+  .main-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
   }
-  button{
-    font: inherit; font-weight: 600; font-size: .85rem;
-    border: 1px solid var(--line); background: var(--bg-panel-2); color: var(--cream);
-    padding: 10px 16px; border-radius: 9px; cursor: pointer;
-    transition: transform .08s ease, background .15s ease, border-color .15s ease;
+
+  /* --- Barra Superior de Configuración --- */
+  .top-navbar {
+    background: var(--panel-blue);
+    border: 1px solid var(--panel-border);
+    backdrop-filter: blur(10px);
+    border-radius: 50px;
+    padding: 10px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 25px;
   }
-  button:hover{ border-color: var(--gold-dim); }
-  button:active{ transform: scale(.96); }
-  button:disabled{ opacity:.35; cursor:not-allowed; }
-  button.primary{ background: var(--gold); color:#231705; border-color: var(--gold); }
-  button.primary:hover{ background:#f0c265; }
-  button.danger{ background: transparent; color: var(--red); border-color: var(--red); }
-  button.ghost{ background: transparent; }
 
-  .timer{ font-variant-numeric: tabular-nums; font-size: 1.6rem; font-weight: 700; color: var(--gold); min-width: 84px; text-align:center; }
-  select{ font: inherit; background: var(--bg-panel-2); color: var(--cream); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  .nav-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-white);
+  }
+  .nav-title span { color: var(--text-muted); font-weight: normal; font-size: 0.8rem; }
 
-  /* ---- Stage: big rosco + slim sidebar ---- */
-  .stage{
-    display:grid;
-    grid-template-columns: 1fr 300px;
-    gap: 20px;
+  .nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .nav-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  select, input[type="number"] {
+    background: #0b132b;
+    border: 1px solid var(--panel-border);
+    color: var(--text-white);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    outline: none;
+  }
+
+  .nav-btn {
+    background: #ffffff;
+    color: #000000;
+    border: none;
+    padding: 7px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .nav-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .nav-btn.secondary { background: var(--panel-blue); color: var(--text-white); border: 1px solid var(--panel-border); }
+  .nav-btn.danger { background: var(--red-btn); color: white; }
+
+  /* --- Distribución en Pantalla --- */
+  .game-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 30px;
     align-items: start;
   }
-  @media (max-width: 980px){ .stage{ grid-template-columns: 1fr; } }
 
-  .rosco-panel{ display:flex; justify-content:center; padding: 32px; }
-  .rosco-holder{
-    position:relative;
-    width: min(78vh, 78vw, 760px);
+  @media (max-width: 1024px) {
+    .game-grid { grid-template-columns: 1fr; }
+  }
+
+  /* --- El Rosco (Zona Izquierda) --- */
+  .rosco-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .rosco-wrapper {
+    position: relative;
+    width: min(65vh, 65vw, 560px);
     aspect-ratio: 1 / 1;
+    margin: 20px 0;
   }
-  .letter{
-    position:absolute;
-    width: clamp(38px, 4.6vw, 58px);
-    height: clamp(38px, 4.6vw, 58px);
-    left:0; top:0;
+
+  /* Letras posicionadas en círculo dinámicamente */
+  .letter-node {
+    position: absolute;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
-    display:flex; align-items:center; justify-content:center;
-    font-weight: 700; font-size: clamp(1rem, 1.6vw, 1.3rem);
-    background: var(--bg-panel-2); border: 2px solid var(--line);
-    color: var(--muted);
-    transform: translate(-50%,-50%);
-    transition: background .2s ease, border-color .2s ease, color .2s ease, transform .2s ease;
+    background: #1d3573;
+    border: 2px solid #25499c;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
   }
-  .letter.current{
-    background: var(--gold); border-color: var(--gold); color:#231705;
-    transform: translate(-50%,-50%) scale(1.22);
-    box-shadow: 0 0 0 8px rgba(232,179,76,.16);
+  .letter-node.active-turn {
+    box-shadow: 0 0 15px #3b82f6, inset 0 0 8px #ffffff;
   }
-  .letter.correct{ background: var(--green); border-color: var(--green); color:#082818; }
-  .letter.wrong{ background: var(--red); border-color: var(--red); color:#2b0508; }
-  .letter.passed{ border-color: var(--gold-dim); color: var(--gold-dim); }
-
-  .rosco-center{
-    position:absolute; inset: 21%; border-radius:50%;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    background: var(--bg-panel); border: 1px solid var(--line);
-    text-align:center; padding: 4%;
+  .letter-node.current {
+    background: #ffffff !important;
+    color: #0b132b !important;
+    border-color: #ffffff !important;
+    transform: translate(-50%, -50%) scale(1.25);
+    z-index: 10;
   }
-  .rc-letter{ font-size: clamp(2.2rem, 5vw, 3.4rem); font-weight: 800; color: var(--gold); line-height:1; margin-bottom: .4em; }
-  .rc-clue{ font-size: clamp(.95rem, 1.6vw, 1.3rem); line-height:1.45; max-width: 90%; }
-  .rc-status{ margin-top: .8em; font-size: clamp(.7rem, 1.1vw, .85rem); color: var(--muted); }
-  .rc-idle{ color: var(--muted); font-size: clamp(1rem, 1.8vw, 1.4rem); }
+  .letter-node.correct { background: var(--green-btn); border-color: #059669; }
+  .letter-node.wrong { background: var(--red-btn); border-color: #dc2626; }
+  .letter-node.passed { background: var(--yellow-btn); border-color: #d97706; }
 
-  /* ---- Sidebar ---- */
-  .sidebar{ display:flex; flex-direction:column; gap: 14px; }
-  .stat-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .stat{
-    background: var(--bg-panel-2); border: 1px solid var(--line); border-radius: 10px;
-    padding: 12px 8px; text-align:center;
+  /* Centro del Rosco */
+  .rosco-center-box {
+    position: absolute;
+    inset: 22%;
+    background: rgba(10, 20, 47, 0.85);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
   }
-  .stat .n{ font-size: 1.5rem; font-weight: 800; color: var(--cream); }
-  .stat .l{ font-size: .68rem; color: var(--muted); letter-spacing:.03em; margin-top: 2px; }
-  .stat.green .n{ color: var(--green); }
-  .stat.red .n{ color: var(--red); }
-  .stat.gold .n{ color: var(--gold); }
 
-  .mic-row{ display:flex; align-items:center; gap:10px; }
-  .mic-dot{ width: 12px; height:12px; border-radius:50%; background: var(--line); flex-shrink:0; }
-  .mic-dot.listening{ background: var(--red); animation: pulse 1.2s infinite; }
-  @keyframes pulse{
-    0%{ box-shadow: 0 0 0 0 rgba(242,100,107,.5); }
-    70%{ box-shadow: 0 0 0 10px rgba(242,100,107,0); }
-    100%{ box-shadow: 0 0 0 0 rgba(242,100,107,0); }
+  .center-big-letter {
+    font-size: 4.5rem;
+    font-weight: 800;
+    color: var(--text-white);
+    line-height: 1;
+    margin-bottom: 10px;
   }
-  .mic-status{ font-size: .8rem; color: var(--muted); }
 
-  .legend{ font-size: .72rem; color: var(--muted); line-height: 1.6; }
-  .legend b{ color: var(--cream); }
-
-  /* ---- Bottom answer bar ---- */
-  .answer-panel{ margin-top: 18px; }
-  .answer-row{ display:flex; gap: 14px; align-items:stretch; flex-wrap: wrap; }
-  .answer-box{
-    flex: 1 1 320px;
-    background: var(--bg-panel-2); border: 1px dashed var(--line);
-    border-radius: 10px; padding: 14px 16px; min-height: 30px;
-    font-size: 1.15rem; display:flex; align-items:center;
+  .center-definition {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    overflow-y: auto;
+    max-height: 120px;
   }
-  .answer-box.correct{ border-color: var(--green); background: rgba(79,209,139,.08); }
-  .answer-box.wrong{ border-color: var(--red); background: rgba(242,100,107,.08); }
-  .answer-box .placeholder{ color: var(--muted); font-style: italic; font-size:.9rem; }
 
-  .verdict-row{ display:flex; gap:10px; flex-wrap:wrap; }
-  .verdict-row button{ flex: 1 1 130px; }
-
-  textarea{
-    width:100%; min-height: 220px; background: var(--bg-panel-2); color: var(--cream);
-    border: 1px solid var(--line); border-radius: 10px; padding: 12px; font: 13px/1.5 monospace;
-    resize: vertical;
+  .player-indicator-tag {
+    background: var(--blue-bright);
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
   }
-  .edit-help{ font-size:.78rem; color: var(--muted); margin: 6px 0 10px; }
-  .edit-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top: 10px; }
 
-  .hint{ text-align:center; color: var(--muted); font-size:.75rem; margin-top: 16px; }
-  .modal-backdrop{
-    position:fixed; inset:0; background: rgba(6,9,18,.72); display:none;
-    align-items:center; justify-content:center; padding: 20px; z-index: 50;
+  /* --- Panel Derecho (Marcadores) --- */
+  .side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
   }
-  .modal-backdrop.open{ display:flex; }
-  .modal{ background: var(--bg-panel); border:1px solid var(--line); border-radius:14px; padding:20px; max-width: 640px; width:100%; }
-  .modal h2{ margin-top:0; font-size:1.05rem; }
+
+  .scoreboard-card {
+    background: var(--panel-blue);
+    border: 1px solid var(--panel-border);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 20px;
+  }
+
+  .panel-header-title {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 6px;
+  }
+
+  .stats-row-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 15px;
+  }
+
+  .stat-mini-box {
+    background: rgba(8, 14, 32, 0.7);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 8px;
+    padding: 10px 4px;
+    text-align: center;
+  }
+  .stat-mini-box .num { font-size: 1.3rem; font-weight: 700; display: block; }
+  .stat-mini-box .label { font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; display: block;}
+
+  .player-container {
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    margin-bottom: 10px;
+  }
+  .player-container.active-turn {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+  .player-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  .player-time { color: var(--yellow-btn); font-variant-numeric: tabular-nums; }
+
+  /* --- Barra Inferior de Respuestas --- */
+  .bottom-action-bar {
+    width: 100%;
+    max-width: 600px;
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .input-row {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .text-input-field {
+    flex: 1;
+    background: #091024;
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    padding: 12px 16px;
+    color: #white;
+    font-size: 0.95rem;
+    color: white;
+    outline: none;
+  }
+  .text-input-field::placeholder { color: #4b5563; }
+
+  .action-btn {
+    border: none;
+    font-weight: bold;
+    font-size: 0.85rem;
+    padding: 0 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: white;
+  }
+  .action-btn.ok { background: var(--green-btn); }
+  .action-btn.pasar { background: var(--yellow-btn); color: #000; }
+  .action-btn.solucion { background: #e2e8f0; color: #000; }
+  .action-btn.fail { background: var(--red-btn); padding: 10px 24px; border-radius: 6px;}
+
+  /* --- Modal Editor --- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-card {
+    background: #0f172a;
+    border: 1px solid var(--panel-border);
+    width: 100%;
+    max-width: 650px;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .modal-card h3 { margin-bottom: 10px; }
+  textarea {
+    width: 100%;
+    height: 240px;
+    background: #020617;
+    color: #e2e8f0;
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    resize: none;
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>Rosco <span>con voz</span></h1>
-    <p>La IA lee la pregunta y escucha tu respuesta &middot; tú solo confirmas</p>
-  </header>
 
-  <div class="controls panel">
-    <button id="btnEdit" class="ghost">✏️ Editar palabras</button>
-    <button id="btnStart" class="primary">▶ Empezar</button>
-    <button id="btnPause" disabled>⏸ Pausa</button>
-    <button id="btnRestart" class="danger">↻ Reiniciar</button>
-    <div class="timer" id="timer">02:30</div>
-    <select id="secondsSelect">
-      <option value="120">2:00 min</option>
-      <option value="150" selected>2:30 min</option>
-      <option value="180">3:00 min</option>
-      <option value="240">4:00 min</option>
-    </select>
+<div class="main-container">
+  <!-- Navbar Superior -->
+  <div class="top-navbar">
+    <div class="nav-title">Simulador del Rosco Ganador <span>- Modo Juego</span></div>
+    
+    <div class="nav-controls">
+      <div class="nav-group">
+        <label>Modo:</label>
+        <select id="modeSelect" onchange="initGame()">
+          <option value="1">1 Jugador</option>
+          <option value="2" selected>2 Jugadores</option>
+        </select>
+      </div>
+
+      <div class="nav-group">
+        <label>Tiempo:</label>
+        <input type="number" id="timeInput" value="150" style="width: 65px;" onchange="resetTimers()">
+      </div>
+
+      <button class="nav-btn secondary" onclick="openModal()">✏️ Editar palabras</button>
+      <button class="nav-btn" id="btnPlayPause" onclick="togglePlay()">Empezar</button>
+      <button class="nav-btn secondary" onclick="togglePauseGame()">Pausa</button>
+      <button class="nav-btn secondary" onclick="initGame()">Reiniciar</button>
+      <button class="nav-btn secondary" onclick="loadDefaultWords()">Nuevo rosco</button>
+    </div>
   </div>
 
-  <div class="stage" style="margin-top:16px;">
-    <div class="panel rosco-panel">
-      <div class="rosco-holder" id="rosco">
-        <div class="rosco-center" id="roscoCenter">
-          <div class="rc-idle">Pulsa <b>Empezar</b><br>para jugar</div>
+  <!-- Zona de Juego Central -->
+  <div class="game-grid">
+    
+    <!-- Lado Izquierdo: El Rosco Activo -->
+    <div class="rosco-section">
+      <div class="rosco-wrapper" id="roscoWrapper">
+        <div class="rosco-center-box">
+          <div class="player-indicator-tag" id="centerPlayerTag">JUGADOR 1</div>
+          <div class="center-big-letter" id="centerLetter">-</div>
+          <div class="center-definition" id="centerClue">Pulsa "Empezar" para comenzar la partida.</div>
         </div>
+        <!-- Los nodos de letras se generan aquí por JS -->
       </div>
-    </div>
 
-    <div class="sidebar">
-      <div class="panel">
-        <div class="stat-grid">
-          <div class="stat green"><div class="n" id="stCorrect">0</div><div class="l">ACIERTOS</div></div>
-          <div class="stat red"><div class="n" id="stWrong">0</div><div class="l">FALLOS</div></div>
-          <div class="stat gold"><div class="n" id="stPass">0</div><div class="l">PASADAS</div></div>
-          <div class="stat"><div class="n" id="stLeft">27</div><div class="l">RESTANTES</div></div>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="mic-row">
-          <div class="mic-dot" id="micDot"></div>
-          <div class="mic-status" id="micStatus">Micrófono inactivo</div>
-        </div>
-      </div>
-      <div class="panel legend">
-        <div><b>Enter</b> = correcta</div>
-        <div><b>X</b> = incorrecta</div>
-        <div><b>Espacio</b> = pasapalabra</div>
-        <div><b>Ctrl+R</b> = reiniciar</div>
-        <div style="margin-top:6px;">Requiere Chrome o Edge + micrófono.</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="panel answer-panel">
-    <div class="answer-row">
-      <div class="answer-box" id="answerBox"><span class="placeholder">Aquí aparecerá lo que digas…</span></div>
-    </div>
-    <div class="verdict-row" style="margin-top:12px;">
-      <button id="btnCorrect" class="primary" disabled>✔ Correcta (Enter)</button>
-      <button id="btnWrong" class="danger" disabled>✘ Incorrecta (X)</button>
-      <button id="btnPass" class="ghost" disabled>⏭ Pasapalabra (Espacio)</button>
-      <button id="btnRepeat" class="ghost" disabled>🔊 Repetir pregunta</button>
-    </div>
-  </div>
-
-  <p class="hint">Formato de edición: LETRA|PREGUNTA|RESPUESTA, una línea por letra.</p>
-</div>
-
-<div class="modal-backdrop" id="editBackdrop">
-  <div class="modal">
-    <h2>Editar palabras del rosco</h2>
-    <div class="edit-help">Una línea por letra, formato: <b>LETRA|PREGUNTA|RESPUESTA</b>. Las líneas mal escritas se ignoran.</div>
-    <textarea id="wordsArea"></textarea>
-    <div class="edit-actions">
-      <button id="btnCancelEdit" class="ghost">Cancelar</button>
-      <button id="btnSaveEdit" class="primary">Guardar</button>
-    </div>
-  </div>
-</div>
-
-<script>
-// ---------- Datos por defecto ----------
-const DEFAULT_WORDS = [
-["A","Empieza por A: Estado de ánimo en el que no se siente nada de tristeza ni alegría","indiferencia"],
-["B","Empieza por B: Instrumento de cuerda que se toca con arco, más grande que el violín","violonchelo"],
-["C","Contiene la C: Fenómeno atmosférico eléctrico que va acompañado de trueno","rayo"],
-["D","Empieza por D: Juego de mesa que se juega con fichas negras y blancas sobre un tablero","damas"],
-["E","Empieza por E: Aparato que sirve para subir y bajar personas entre plantas de un edificio","ascensor"],
-["F","Contiene la F: Instrumento óptico que sirve para ver objetos lejanos","catalejo"],
-["G","Empieza por G: Ave de corral que en Navidad se suele comer asada","pavo"],
-["H","Empieza por H: Deporte que se practica sobre hielo con un disco y un stick","hockey"],
-["I","Contiene la I: Insecto que produce miel y vive en colmenas","abeja"],
-["J","Empieza por J: Planta con espinas típica del desierto","cactus"],
-["L","Empieza por L: Órgano del cuerpo humano encargado de filtrar la sangre","hígado"],
-["M","Empieza por M: Instrumento que se usa para medir la temperatura corporal","termómetro"],
-["N","Empieza por N: Planeta más alejado del Sol del sistema solar","neptuno"],
-["Ñ","Contiene la Ñ: Hermano del cuñado","concuñado"],
-["O","Contiene la O: Deporte en el que se intenta marcar goles con los pies","fútbol"],
-["P","Empieza por P: Personaje de videojuego que es amarillo y puede lanzar electricidad","pikachu"],
-["Q","Empieza por Q: Alimento lácteo que se utiliza mucho en pizzas","queso"],
-["R","Empieza por R: Animal pequeño que tiene una cola larga y suele vivir en las casas o en el campo","ratón"],
-["S","Empieza por S: Criatura fantástica que suele vivir en el mar y tiene forma de mujer con cola de pez","sirena"],
-["T","Empieza por T: Red social conocida por sus vídeos cortos y bailes","tiktok"],
-["U","Contiene la U: Animal fantástico parecido a un caballo que tiene un cuerno en la cabeza","unicornio"],
-["V","Contiene la V: Medio de transporte que puede volar y lleva pasajeros","avión"],
-["X","Empieza por X: Instrumento musical que se toca con dos baquetas","xilófono"],
-["Y","Contiene la Y: Personaje de juguete vaquero de una famosa película de animación","woody"],
-["Z","Empieza por Z: Animal que se parece a un perro y vive en manadas","zorro"],
-];
-
-// ---------- Estado ----------
-let words = [];
-let idx = 0;
-let timeLeft = 150;
-let timerId = null;
-let running = false;
-let correctCount = 0, wrongCount = 0, passCount = 0;
-let recognition = null;
-let recognizing = false;
-
-const el = (id) => document.getElementById(id);
-
-function normalize(s){
-  return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zñ0-9\s]/g,"").trim();
-}
-function similar(a,b){
-  a = normalize(a); b = normalize(b);
-  if(!a || !b) return false;
-  if(a === b) return true;
-  if(a.includes(b) || b.includes(a)) return true;
-  const d = levenshtein(a,b);
-  return d <= Math.max(1, Math.floor(b.length*0.25));
-}
-function levenshtein(a,b){
-  const m=a.length,n=b.length;
-  const dp=Array.from({length:m+1},()=>new Array(n+1).fill(0));
-  for(let i=0;i<=m;i++) dp[i][0]=i;
-  for(let j=0;j<=n;j++) dp[0][j]=j;
-  for(let i=1;i<=m;i++)
-    for(let j=1;j<=n;j++)
-      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j-1],dp[i-1][j],dp[i][j-1]);
-  return dp[m][n];
-}
-
-function parseWords(text){
-  const out = [];
-  text.split("\n").forEach(line=>{
-    const parts = line.split("|");
-    if(parts.length>=3){
-      const letter = parts[0].trim().toUpperCase();
-      const clue = parts[1].trim();
-      const answer = parts.slice(2).join("|").trim();
-      if(letter && clue && answer) out.push({letter, clue, answer, status:"pending"});
-    }
-  });
-  return out;
-}
-function wordsToText(list){ return list.map(w=>`${w.letter}|${w.clue}|${w.answer}`).join("\n"); }
-function loadDefault(){ words = DEFAULT_WORDS.map(([letter,clue,answer])=>({letter,clue,answer,status:"pending"})); }
-loadDefault();
-
-// ---------- Rosco visual ----------
-function layoutRosco(){
-  const holder = el('rosco');
-  holder.querySelectorAll('.letter').forEach(n=>n.remove());
-  const n = words.length;
-  const Rpct = 42; // % del contenedor
-  words.forEach((w,i)=>{
-    const angle = (i/n)*2*Math.PI - Math.PI/2;
-    const x = 50 + Rpct*Math.cos(angle);
-    const y = 50 + Rpct*Math.sin(angle);
-    const d = document.createElement('div');
-    d.className = 'letter';
-    d.id = 'L'+i;
-    d.textContent = w.letter;
-    d.style.left = x+'%';
-    d.style.top = y+'%';
-    holder.appendChild(d);
-  });
-}
-
-function refreshRosco(){
-  words.forEach((w,i)=>{
-    const d = el('L'+i);
-    if(!d) return;
-    d.className = 'letter ' + (i===idx && running ? 'current' : '') + ' ' + w.status;
-  });
-  const left = words.filter(w=>w.status==='pending').length;
-  el('stLeft').textContent = left;
-}
-
-function updateScore(){
-  el('stCorrect').textContent = correctCount;
-  el('stWrong').textContent = wrongCount;
-  el('stPass').textContent = passCount;
-}
-
-// ---------- Turnos ----------
-function nextPendingIndex(from){
-  const n = words.length;
-  for(let step=1; step<=n; step++){
-    const i = (from+step) % n;
-    if(words[i].status === 'pending') return i;
-  }
-  return -1;
-}
-
-function startTurn(){
-  if(!running) return;
-  el('answerBox').className = 'answer-box';
-  el('answerBox').innerHTML = '<span class="placeholder">Escuchando… habla cuando oigas la pregunta</span>';
-  setVerdictButtons(false);
-  const w = words[idx];
-  el('roscoCenter').innerHTML = `
-    <div class="rc-letter">${w.letter}</div>
-    <div class="rc-clue">${escapeHtml(w.clue)}</div>
-    <div class="rc-status" id="rcStatus">Escuchando…</div>`;
-  refreshRosco();
-  speak(`${w.letter}. ${w.clue}`, () => { if(running) startListening(); });
-}
-
-function escapeHtml(s){ return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-
-function speak(text, onEnd){
-  if(!('speechSynthesis' in window)){ if(onEnd) onEnd(); return; }
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'es-ES'; u.rate = 1;
-  u.onend = () => { if(onEnd) onEnd(); };
-  window.speechSynthesis.speak(u);
-}
-
-// ---------- Reconocimiento de voz ----------
-function setupRecognition(){
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){
-    el('micStatus').textContent = 'Este navegador no soporta reconocimiento de voz (usa Chrome o Edge).';
-    return null;
-  }
-  const r = new SR();
-  r.lang = 'es-ES'; r.continuous = false; r.interimResults = true;
-  r.onstart = () => {
-    recognizing = true;
-    el('micDot').classList.add('listening');
-    el('micStatus').textContent = 'Escuchando tu respuesta…';
-  };
-  r.onresult = (e) => {
-    let transcript = '';
-    for(let i=e.resultIndex; i<e.results.length; i++) transcript += e.results[i][0].transcript;
-    handleTranscript(transcript, e.results[e.results.length-1].isFinal);
-  };
-  r.onerror = () => { el('micStatus').textContent = 'No se ha entendido bien, pulsa 🔊 para repetir o responde manualmente.'; };
-  r.onend = () => {
-    recognizing = false;
-    el('micDot').classList.remove('listening');
-    if(running) el('micStatus').textContent = 'Micrófono en pausa · pulsa Repetir si no te ha oído';
-  };
-  return r;
-}
-function startListening(){
-  if(!recognition) recognition = setupRecognition();
-  if(!recognition) return;
-  try{ recognition.start(); }catch(e){}
-}
-function handleTranscript(transcript, isFinal){
-  const clean = transcript.trim();
-  if(!clean) return;
-  if(normalize(clean).includes('pasapalabra')){ if(isFinal) doPass(); return; }
-  const w = words[idx];
-  const isMatch = similar(clean, w.answer);
-  el('answerBox').textContent = clean;
-  el('answerBox').className = 'answer-box ' + (isMatch ? 'correct' : 'wrong');
-  setVerdictButtons(true);
-  const rc = el('rcStatus');
-  if(rc) rc.textContent = isMatch ? 'Suena correcta ✔' : 'No coincide con la respuesta';
-  el('micStatus').textContent = isMatch
-    ? 'Suena correcta · pulsa Correcta o Enter para confirmar'
-    : 'No coincide · confirma manualmente si crees que es un error de dictado';
-}
-
-function setVerdictButtons(enabled){
-  el('btnCorrect').disabled = !enabled;
-  el('btnWrong').disabled = !enabled;
-  el('btnPass').disabled = !running;
-  el('btnRepeat').disabled = !running;
-}
-
-// ---------- Acciones de turno ----------
-function doCorrect(){ if(!running) return; words[idx].status='correct'; correctCount++; advance(); }
-function doWrong(){ if(!running) return; words[idx].status='wrong'; wrongCount++; advance(); }
-function doPass(){ if(!running) return; if(words[idx].status==='pending'){ words[idx].status='passed'; passCount++; } advance(); }
-
-function advance(){
-  updateScore();
-  refreshRosco();
-  if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
-  const next = nextPendingIndex(idx);
-  if(next === -1){ finishGame(); return; }
-  idx = next;
-  setTimeout(startTurn, 500);
-}
-
-function finishGame(){
-  running = false;
-  clearInterval(timerId);
-  el('roscoCenter').innerHTML = `<div class="rc-idle">Rosco terminado<br><span style="color:var(--gold)">${correctCount}</span> aciertos</div>`;
-  el('micStatus').textContent = 'Micrófono inactivo';
-  setVerdictButtons(false);
-  toggleTopButtons(false);
-  speak(`Rosco terminado. ${correctCount} aciertos.`);
-}
-
-// ---------- Temporizador ----------
-function formatTime(s){ const m=Math.floor(s/60), sec=s%60; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
-function tick(){ timeLeft--; el('timer').textContent = formatTime(Math.max(timeLeft,0)); if(timeLeft<=0) finishGame(); }
-
-// ---------- Botones principales ----------
-function toggleTopButtons(isRunning){
-  el('btnStart').disabled = isRunning;
-  el('btnPause').disabled = !isRunning;
-  el('btnEdit').disabled = isRunning;
-  el('secondsSelect').disabled = isRunning;
-}
-
-el('btnStart').addEventListener('click', () => {
-  words.forEach(w=>w.status='pending');
-  correctCount=wrongCount=passCount=0;
-  updateScore();
-  idx = 0;
-  timeLeft = parseInt(el('secondsSelect').value,10);
-  el('timer').textContent = formatTime(timeLeft);
-  running = true;
-  toggleTopButtons(true);
-  clearInterval(timerId);
-  timerId = setInterval(tick, 1000);
-  startTurn();
-});
-
-el('btnPause').addEventListener('click', () => {
-  if(running){
-    running = false; clearInterval(timerId); window.speechSynthesis.cancel();
-    if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
-    el('btnPause').textContent = '▶ Reanudar';
-    el('micStatus').textContent = 'En pausa';
-  } else {
-    running = true; timerId = setInterval(tick, 1000);
-    el('btnPause').textContent = '⏸ Pausa';
-    startTurn();
-  }
-});
-
-el('btnRestart').addEventListener('click', () => {
-  running = false; clearInterval(timerId); window.speechSynthesis.cancel();
-  if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
-  words.forEach(w=>w.status='pending');
-  correctCount=wrongCount=passCount=0; idx = 0;
-  updateScore(); refreshRosco();
-  el('timer').textContent = formatTime(parseInt(el('secondsSelect').value,10));
-  el('roscoCenter').innerHTML = '<div class="rc-idle">Pulsa <b>Empezar</b><br>para jugar</div>';
-  el('answerBox').innerHTML = '<span class="placeholder">Aquí aparecerá lo que digas…</span>';
-  el('micStatus').textContent = 'Micrófono inactivo';
-  toggleTopButtons(false);
-  el('btnPause').textContent = '⏸ Pausa';
-  setVerdictButtons(false);
-});
-
-el('btnCorrect').addEventListener('click', doCorrect);
-el('btnWrong').addEventListener('click', doWrong);
-el('btnPass').addEventListener('click', doPass);
-el('btnRepeat').addEventListener('click', () => {
-  if(!running) return;
-  const w = words[idx];
-  if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
-  speak(`${w.letter}. ${w.clue}`, () => { if(running) startListening(); });
-});
-
-// ---------- Edición de palabras ----------
-el('btnEdit').addEventListener('click', () => {
-  el('wordsArea').value = wordsToText(words);
-  el('editBackdrop').classList.add('open');
-});
-el('btnCancelEdit').addEventListener('click', () => el('editBackdrop').classList.remove('open'));
-el('btnSaveEdit').addEventListener('click', () => {
-  const parsed = parseWords(el('wordsArea').value);
-  if(parsed.length >= 3){
-    words = parsed; idx = 0;
-    layoutRosco(); refreshRosco();
-  }
-  el('editBackdrop').classList.remove('open');
-});
-
-// ---------- Atajos de teclado ----------
-document.addEventListener('keydown', (e) => {
-  if(el('editBackdrop').classList.contains('open')) return;
-  if(e.key === 'Enter' && !el('btnCorrect').disabled) doCorrect();
-  else if((e.key === 'x' || e.key === 'X') && !el('btnWrong').disabled) doWrong();
-  else if(e.key === ' ' && running){ e.preventDefault(); doPass(); }
-  else if(e.ctrlKey && (e.key === 'r' || e.key === 'R')){ e.preventDefault(); el('btnRestart').click(); }
-});
-
-// ---------- Init ----------
-layoutRosco();
-refreshRosco();
-updateScore();
-el('timer').textContent = formatTime(parseInt(el('secondsSelect').value,10));
-</script>
-</body>
-</html>
