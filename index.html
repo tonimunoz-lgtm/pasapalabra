@@ -1012,7 +1012,8 @@ function pushState(){
     micStatus: el('micStatus').textContent,
     answerText: isPlaceholder ? '' : ab.textContent,
     answerClass,
-    verdictText: rc ? rc.textContent : ''
+    verdictText: rc ? rc.textContent : '',
+    correctAnswer: running ? p.words[p.idx].answer : ''
   });
 }
 
