@@ -143,6 +143,13 @@
   .paircode{ font-size: 3rem; font-weight: 800; letter-spacing: .12em; color: var(--gold); text-align:center; margin: 14px 0; }
 
   #btnExitFullscreen{ display:none; position:fixed; top:16px; right:16px; z-index:60; }
+  #fsBgToggle{ display:none; position:fixed; top:64px; right:16px; z-index:60; }
+  #fsBgToggle label{
+    display:flex; align-items:center; gap:8px; background: rgba(11,32,74,.85);
+    border: 1px solid rgba(255,255,255,.12); padding: 10px 14px; border-radius: 10px;
+    font-size: .82rem; color: var(--cream); cursor:pointer;
+  }
+  body.fullscreen-active.video-active #fsBgToggle{ display:block; }
 
   #tvCanvas{ position:fixed; inset:0; width:100%; height:100%; z-index:5; display:none; background:#000; }
   body.fullscreen-active.video-active #tvCanvas{ display:block; }
@@ -259,6 +266,11 @@
 </div>
 
 <button id="btnExitFullscreen">Salir ⤢</button>
+<div id="fsBgToggle">
+  <label>
+    <input type="checkbox" id="chkVirtualBgFs" checked> Fondo virtual
+  </label>
+</div>
 <video id="rawVideo" autoplay playsinline muted style="display:none;"></video>
 <canvas id="tvCanvas"></canvas>
 
@@ -950,6 +962,9 @@ function setFullscreen(on){
 el('btnFullscreen').addEventListener('click', () => setFullscreen(true));
 el('btnExitFullscreen').addEventListener('click', () => setFullscreen(false));
 document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement) setFullscreen(false); });
+
+el('chkVirtualBgFs').addEventListener('change', (e) => { el('chkVirtualBg').checked = e.target.checked; });
+el('chkVirtualBg').addEventListener('change', (e) => { el('chkVirtualBgFs').checked = e.target.checked; });
 
 // ---------- Atajos de teclado ----------
 document.addEventListener('keydown', (e) => {
