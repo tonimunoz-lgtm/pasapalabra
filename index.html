@@ -684,35 +684,37 @@
   }
 
   function updateScoreboardUI() {
-  const targetPlayers =;
+  const targetPlayers = [0, 1];
+
   targetPlayers.forEach(p => {
 
-      if (!playersData[p] || !playersData[p].states) return;
-      
-      const timeEl = document.getElementById(`p${p}Time`);
-      if (timeEl) timeEl.innerText = formatTime(playersData[p].time);
-      
-      let ok = 0, fail = 0, pass = 0, rest = 0;
-      alphabet.forEach(l => {
-        const st = playersData[p].states[l];
-        if (st === 'correct') ok++;
-        else if (st === 'wrong') fail++;
-        else if (st === 'passed') pass++;
-        else rest++;
-      });
+    if (!playersData[p] || !playersData[p].states) return;
 
-      const okEl = document.getElementById(`p${p}-ok`);
-      const failEl = document.getElementById(`p${p}-fail`);
-      const passEl = document.getElementById(`p${p}-pass`);
-      const restEl = document.getElementById(`p${p}-rest`);
+    const timeEl = document.getElementById(`p${p}Time`);
+    if (timeEl) timeEl.innerText = formatTime(playersData[p].time);
 
-      if (okEl) okEl.innerText = ok;
-      if (failEl) failEl.innerText = fail;
-      if (passEl) passEl.innerText = pass;
-      if (restEl) restEl.innerText = rest;
+    let ok = 0, fail = 0, pass = 0, rest = 0;
+
+    alphabet.forEach(l => {
+      const st = playersData[p].states[l];
+
+      if (st === 'correct') ok++;
+      else if (st === 'wrong') fail++;
+      else if (st === 'passed') pass++;
+      else rest++;
     });
-  }
 
+    const okEl = document.getElementById(`p${p}-ok`);
+    const failEl = document.getElementById(`p${p}-fail`);
+    const passEl = document.getElementById(`p${p}-pass`);
+    const restEl = document.getElementById(`p${p}-rest`);
+
+    if (okEl) okEl.innerText = ok;
+    if (failEl) failEl.innerText = fail;
+    if (passEl) passEl.innerText = pass;
+    if (restEl) restEl.innerText = rest;
+  });
+}
   function advanceToNextLetter() {
     const pData = playersData[activePlayer];
     let foundNext = false;
