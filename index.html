@@ -799,8 +799,23 @@ function openLinkModal(){
 }
 
 // ---------- Vídeo con fondo virtual (uno o dos jugadores) ----------
-const videoSlots = {}; // { 0: {raw, canvas, segModel, lastSegMask, segBusy}, 1: {...} }
+const videoSlots = {}; // { 0: {raw, canvas, lastSegMask, active}, 1: {...} }
 let globalRenderLoopActive = false;
+let sharedSegModel = null;
+let segBusy = false;
+let segActiveSlot = null;
+let segRR = 0; // turno rotatorio entre cámaras para repartir el procesado
+
+function ensureSegModel(){
+  if(sharedSegModel || typeof SelfieSegmentation === 'undefined') return;
+  sharedSegModel = new SelfieSegmentation({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${f}` });
+  sharedSegModel.setOptions({ modelSelection: 0 });
+  sharedSegModel.onResults((results) => {
+    if(segActiveSlot !== null && videoSlots[segActiveSlot]) videoSlots[segActiveSlot].lastSegMask = results;
+    segBusy = false;
+    segActiveSlot = null;
+  });
+}
 
 function getOrCreateSlot(i){
   if(videoSlots[i]) return videoSlots[i];
@@ -813,12 +828,7 @@ function getOrCreateSlot(i){
   canvas.className = 'tv-canvas';
   document.body.appendChild(canvas);
 
-  const slot = { raw, canvas, segModel: null, lastSegMask: null, segBusy: false, active: false };
-  if(typeof SelfieSegmentation !== 'undefined'){
-    slot.segModel = new SelfieSegmentation({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${f}` });
-    slot.segModel.setOptions({ modelSelection: 0 });
-    slot.segModel.onResults((results) => { slot.lastSegMask = results; slot.segBusy = false; });
-  }
+  const slot = { raw, canvas, lastSegMask: null, active: false };
   videoSlots[i] = slot;
   return slot;
 }
@@ -827,6 +837,7 @@ function attachVideoSlot(i, stream){
   const slot = getOrCreateSlot(i);
   slot.raw.srcObject = stream;
   slot.active = true;
+  ensureSegModel();
   document.body.classList.add('video-active');
   el('videoIndicator').textContent = Object.values(videoSlots).some(s=>s.active) ? '🎥 Cámara conectada' : '';
   startGlobalRenderLoop();
@@ -893,6 +904,23 @@ function startGlobalRenderLoop(){
   function frame(){
     if(!globalRenderLoopActive) return;
     const fullscreenOn = document.body.classList.contains('fullscreen-active');
+    const useVirtual = el('chkVirtualBg').checked && sharedSegModel;
+
+    // Un único modelo compartido: como mucho una petición de segmentación en
+    // vuelo a la vez, repartida por turnos entre las cámaras activas.
+    if(useVirtual && !segBusy){
+      const activeKeys = Object.keys(videoSlots).map(Number).filter(i => {
+        const s = videoSlots[i];
+        return s.active && s.raw.readyState >= 2 && s.raw.videoWidth > 0;
+      });
+      if(activeKeys.length){
+        const idx = activeKeys[segRR % activeKeys.length];
+        segRR++;
+        segBusy = true; segActiveSlot = idx;
+        sharedSegModel.send({ image: videoSlots[idx].raw });
+      }
+    }
+
     Object.keys(videoSlots).forEach(key => {
       const i = parseInt(key,10);
       const slot = videoSlots[i];
@@ -912,11 +940,9 @@ function startGlobalRenderLoop(){
       canvas.style.height = h+'px';
 
       const ctx = canvas.getContext('2d');
-      const useVirtual = el('chkVirtualBg').checked && slot.segModel;
       if(raw.readyState >= 2 && raw.videoWidth > 0){
         const { sx, sy, sw, sh } = coverRect(raw.videoWidth, raw.videoHeight, w, h);
         if(useVirtual){
-          if(!slot.segBusy){ slot.segBusy = true; slot.segModel.send({ image: raw }); }
           if(slot.lastSegMask){
             ctx.save();
             ctx.clearRect(0,0,w,h);
