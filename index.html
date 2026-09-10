@@ -1036,7 +1036,10 @@ function pushState(){
     answerText: isPlaceholder ? '' : ab.textContent,
     answerClass,
     verdictText: rc ? rc.textContent : '',
-    correctAnswer: running ? p.words[p.idx].answer : ''
+    correctAnswer: running ? p.words[p.idx].answer : '',
+    startDisabled: el('btnStart').disabled,
+    pauseDisabled: el('btnPause').disabled,
+    pauseLabel: el('btnPause').textContent
   });
 }
 
