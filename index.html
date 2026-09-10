@@ -191,6 +191,26 @@
   body.fullscreen-active .stage .stats-panel .stat.time .n{ color:#04222b; font-size: 2.2rem; }
   .stat.time{ display:none; }
 
+  /* Modo 2 jugadores a pantalla completa: mismo estilo de marcador circular que en 1 jugador */
+  body.fullscreen-active .stage2p .stats-panel{ background: transparent; border: none; padding: 0; }
+  body.fullscreen-active .stage2p .stats-panel .stat-grid{
+    display:flex; gap: 12px; justify-content:center; align-items:center; grid-template-columns: none;
+  }
+  body.fullscreen-active .stage2p .stats-panel .stat{
+    width: 62px; height: 62px; border-radius: 50%; border: 3px solid #fff;
+    display:flex; align-items:center; justify-content:center; padding: 0;
+    background: var(--green);
+  }
+  body.fullscreen-active .stage2p .stats-panel .stat .l{ display:none; }
+  body.fullscreen-active .stage2p .stats-panel .stat .n{ font-size: 1.05rem; color:#fff; }
+  body.fullscreen-active .stage2p .stats-panel .stat.green{ background: var(--blue); }
+  body.fullscreen-active .stage2p .stats-panel .stat.red{ background: var(--red); }
+  body.fullscreen-active .stage2p .stats-panel .stat.gold{ background: var(--gold); }
+  body.fullscreen-active .stage2p .stats-panel .stat.time{
+    background: var(--cyan); color:#04222b; width: 120px; height: 120px; border-width: 5px;
+  }
+  body.fullscreen-active .stage2p .stats-panel .stat.time .n{ color:#04222b; font-size: 1.7rem; }
+
   /* Modo 2 jugadores a pantalla completa: cada rosco crece todo lo posible */
   body.fullscreen-active .stage2p .rosco-panel{ padding: 10px; }
   body.fullscreen-active .stage2p .rosco-holder.small{ width: min(82vh, 46vw, 900px) !important; }
