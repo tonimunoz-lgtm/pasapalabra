@@ -167,13 +167,10 @@
   body.fullscreen-active .wrap{ max-width: 100%; }
 
   /* Modo 1 jugador a pantalla completa: el rosco ocupa casi toda la ventana,
-     el marcador vuelve a la esquina inferior izquierda como franja flotante.
-     El tamaño exacto del rosco lo calcula JS (sizeFullscreenRosco) midiendo
-     el hueco real disponible, para que nunca se monte sobre el marcador
-     sea cual sea la resolución de la pantalla. */
+     el marcador va como franja flotante en la esquina inferior izquierda. */
   body.fullscreen-active .stage{ grid-template-columns: 1fr; }
   body.fullscreen-active .stage .rosco-panel{ padding: 0; min-height: 94vh; }
-  body.fullscreen-active .stage .rosco-holder{ width: min(94vh, 96vw, 1500px); }
+  body.fullscreen-active .stage .rosco-holder{ width: min(94vh, 96vw, 1500px) !important; }
   body.fullscreen-active .stage .stats-panel{
     position: fixed; bottom: 24px; left: 24px; transform: none;
     width: auto; background: transparent; border: none; padding: 0; z-index: 40;
@@ -452,7 +449,6 @@ function renderStage(){
   refreshAllStats();
   refreshAllRoscos();
   updateAnswerAreaVisibility();
-  sizeFullscreenRosco();
 }
 
 function layoutRosco(i){
@@ -1014,52 +1010,10 @@ function setFullscreen(on){
   el('btnExitFullscreen').style.display = on ? 'inline-block' : 'none';
   if(on){ document.documentElement.requestFullscreen?.().catch(()=>{}); }
   else if(document.fullscreenElement){ document.exitFullscreen?.(); }
-  sizeFullscreenRosco();
 }
 el('btnFullscreen').addEventListener('click', () => setFullscreen(true));
 el('btnExitFullscreen').addEventListener('click', () => setFullscreen(false));
-document.addEventListener('fullscreenchange', () => {
-  if(!document.fullscreenElement) setFullscreen(false);
-  sizeFullscreenRosco();
-});
-window.addEventListener('resize', sizeFullscreenRosco);
-
-// Mide el hueco real disponible (en píxeles reales de la pantalla que se esté
-// usando, sea cual sea su resolución o forma) y calcula el tamaño máximo que
-// puede tener el rosco sin invadir el marcador de la esquina inferior
-// izquierda. Se aplica como estilo inline, por lo que gana siempre a las
-// reglas de CSS basadas en vh/vw (que pueden fallar en algunos navegadores
-// embebidos, como el de proyectores Android).
-function sizeFullscreenRosco(){
-  if(!document.body.classList.contains('fullscreen-active')) return;
-  if(gameMode !== 1) return; // el modo 2 jugadores ya se ajusta solo, columna a columna
-  const panel = document.querySelector('.stage .rosco-panel');
-  const holder = document.querySelector('.stage .rosco-holder');
-  if(!panel || !holder) return;
-
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const reserveBottomLeft = 210; // alto aproximado del marcador + margen de seguridad
-  const sideMargin = 24;
-
-  const maxByHeight = vh - reserveBottomLeft - sideMargin;
-  const maxByWidth = vw - reserveBottomLeft - sideMargin;
-  let size = Math.max(200, Math.min(maxByHeight, maxByWidth, vh*0.94, vw*0.96, 1500));
-
-  holder.style.width = size + 'px';
-  holder.style.height = size + 'px';
-
-  // Las letras deben escalar EN PROPORCIÓN al tamaño real del círculo
-  // (no según el ancho de la ventana), o si el círculo se encoge un poco
-  // para dejar hueco al marcador, las letras se quedan igual de grandes
-  // y se amontonan entre sí.
-  const letterSize = Math.max(30, Math.min(94, size * 0.093));
-  const letterFont = letterSize * 0.46;
-  holder.querySelectorAll('.letter').forEach(d => {
-    d.style.width = letterSize + 'px';
-    d.style.height = letterSize + 'px';
-    d.style.fontSize = letterFont + 'px';
-  });
-}
+document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement) setFullscreen(false); });
 
 el('chkVirtualBgFs').addEventListener('change', (e) => { el('chkVirtualBg').checked = e.target.checked; });
 el('chkVirtualBg').addEventListener('change', (e) => { el('chkVirtualBgFs').checked = e.target.checked; });
