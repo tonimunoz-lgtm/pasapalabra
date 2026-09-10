@@ -195,8 +195,9 @@ function updateFromHost(state){
   el('mMic').textContent = state.micStatus || '';
   el('mCorrect').disabled = !state.verdictReady;
   el('mWrong').disabled = !state.verdictReady;
-  el('mStart').disabled = state.running;
-  el('mPause').disabled = !state.running;
+  el('mStart').disabled = state.startDisabled;
+  el('mPause').disabled = state.pauseDisabled;
+  el('mPause').textContent = state.pauseLabel || '⏸ Pausa';
 
   const box = el('mAnswerBox');
   box.className = 'mAnswerBox' + (state.answerClass ? ' ' + state.answerClass : '');
