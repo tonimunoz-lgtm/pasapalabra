@@ -167,31 +167,31 @@
   body.fullscreen-active .wrap{ max-width: 100%; }
 
   /* Modo 1 jugador a pantalla completa: el rosco ocupa casi toda la ventana,
-     el marcador pasa a ser una franja flotante inferior compacta */
-  body.fullscreen-active .stage{
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap: 18px; min-height: 92vh;
-  }
-  body.fullscreen-active .stage .rosco-panel{ padding: 0; }
-  body.fullscreen-active .stage .rosco-holder{ width: min(72vh, 82vw, 1300px) !important; }
+     el marcador vuelve a la esquina inferior izquierda como franja flotante.
+     El tamaño exacto del rosco lo calcula JS (sizeFullscreenRosco) midiendo
+     el hueco real disponible, para que nunca se monte sobre el marcador
+     sea cual sea la resolución de la pantalla. */
+  body.fullscreen-active .stage{ grid-template-columns: 1fr; }
+  body.fullscreen-active .stage .rosco-panel{ padding: 0; min-height: 94vh; }
+  body.fullscreen-active .stage .rosco-holder{ width: min(94vh, 96vw, 1500px); }
   body.fullscreen-active .stage .stats-panel{
-    position: relative; z-index: 10;
-    width: auto; background: transparent; border: none; padding: 0;
+    position: fixed; bottom: 24px; left: 24px; transform: none;
+    width: auto; background: transparent; border: none; padding: 0; z-index: 40;
   }
-  body.fullscreen-active .stage .stats-panel .stat-grid{ display:flex; gap: 18px; grid-template-columns: none; align-items: center; justify-content:center; flex-wrap: wrap; }
+  body.fullscreen-active .stage .stats-panel .stat-grid{ display:flex; gap: 18px; grid-template-columns: none; align-items: center; }
   body.fullscreen-active .stage .stats-panel .stat{
-    width: 68px; height: 68px; border-radius: 50%; border: 3px solid #fff;
+    width: 76px; height: 76px; border-radius: 50%; border: 3px solid #fff;
     display:flex; align-items:center; justify-content:center; padding: 0;
     background: var(--green);
   }
   body.fullscreen-active .stage .stats-panel .stat .l{ display:none; }
-  body.fullscreen-active .stage .stats-panel .stat .n{ font-size: 1.2rem; color:#fff; }
+  body.fullscreen-active .stage .stats-panel .stat .n{ font-size: 1.3rem; color:#fff; }
   body.fullscreen-active .stage .stats-panel .stat.green{ background: var(--blue); }
   body.fullscreen-active .stage .stats-panel .stat.red{ background: var(--red); }
   body.fullscreen-active .stage .stats-panel .stat.gold{ background: var(--gold); }
   body.fullscreen-active .stage .stats-panel .stat.neutral{ background: var(--bg-panel-2); }
-  body.fullscreen-active .stage .stats-panel .stat.time{ background: var(--cyan); color:#04222b; width: 100px; height: 100px; border-width: 4px; }
-  body.fullscreen-active .stage .stats-panel .stat.time .n{ color:#04222b; font-size: 1.6rem; }
+  body.fullscreen-active .stage .stats-panel .stat.time{ background: var(--cyan); color:#04222b; width: 152px; height: 152px; border-width: 5px; }
+  body.fullscreen-active .stage .stats-panel .stat.time .n{ color:#04222b; font-size: 2.2rem; }
   .stat.time{ display:none; }
 
   /* Modo 2 jugadores a pantalla completa: mismo estilo de marcador circular que en 1 jugador */
@@ -452,6 +452,7 @@ function renderStage(){
   refreshAllStats();
   refreshAllRoscos();
   updateAnswerAreaVisibility();
+  sizeFullscreenRosco();
 }
 
 function layoutRosco(i){
@@ -1005,10 +1006,40 @@ function setFullscreen(on){
   el('btnExitFullscreen').style.display = on ? 'inline-block' : 'none';
   if(on){ document.documentElement.requestFullscreen?.().catch(()=>{}); }
   else if(document.fullscreenElement){ document.exitFullscreen?.(); }
+  sizeFullscreenRosco();
 }
 el('btnFullscreen').addEventListener('click', () => setFullscreen(true));
 el('btnExitFullscreen').addEventListener('click', () => setFullscreen(false));
-document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement) setFullscreen(false); });
+document.addEventListener('fullscreenchange', () => {
+  if(!document.fullscreenElement) setFullscreen(false);
+  sizeFullscreenRosco();
+});
+window.addEventListener('resize', sizeFullscreenRosco);
+
+// Mide el hueco real disponible (en píxeles reales de la pantalla que se esté
+// usando, sea cual sea su resolución o forma) y calcula el tamaño máximo que
+// puede tener el rosco sin invadir el marcador de la esquina inferior
+// izquierda. Se aplica como estilo inline, por lo que gana siempre a las
+// reglas de CSS basadas en vh/vw (que pueden fallar en algunos navegadores
+// embebidos, como el de proyectores Android).
+function sizeFullscreenRosco(){
+  if(!document.body.classList.contains('fullscreen-active')) return;
+  if(gameMode !== 1) return; // el modo 2 jugadores ya se ajusta solo, columna a columna
+  const panel = document.querySelector('.stage .rosco-panel');
+  const holder = document.querySelector('.stage .rosco-holder');
+  if(!panel || !holder) return;
+
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const reserveBottomLeft = 210; // alto aproximado del marcador + margen de seguridad
+  const sideMargin = 24;
+
+  const maxByHeight = vh - reserveBottomLeft - sideMargin;
+  const maxByWidth = vw - reserveBottomLeft - sideMargin;
+  let size = Math.max(200, Math.min(maxByHeight, maxByWidth, vh*0.94, vw*0.96, 1500));
+
+  holder.style.width = size + 'px';
+  holder.style.height = size + 'px';
+}
 
 el('chkVirtualBgFs').addEventListener('change', (e) => { el('chkVirtualBg').checked = e.target.checked; });
 el('chkVirtualBg').addEventListener('change', (e) => { el('chkVirtualBgFs').checked = e.target.checked; });
