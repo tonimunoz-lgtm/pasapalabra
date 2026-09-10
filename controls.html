@@ -35,28 +35,20 @@
   }
   button.primary{ background: var(--gold); color:#231705; border-color: var(--gold); }
   button.danger{ background: transparent; color: var(--red); border-color: var(--red); }
+  button.correctBtn{ background: var(--green); color:#fff; border-color: var(--green); }
+  button.wrongBtn{ background: var(--red); color:#fff; border-color: var(--red); }
   button:disabled{ opacity:.35; }
   button:active{ transform: scale(.97); }
 
   #controlScreen{ max-width: 480px; margin: 0 auto; display:none; }
   .mTimer{ text-align:center; font-size: 2.6rem; font-weight:800; color: var(--gold); font-variant-numeric: tabular-nums; }
-  .mTurn{ text-align:center; color: var(--gold); font-weight:700; margin-bottom: 14px; min-height: 1.3em; }
-  .micline{ text-align:center; color: var(--muted); font-size:.8rem; margin-bottom: 14px; min-height: 1.2em; }
-  .mAnswerBox{
-    background: var(--bg-panel-2); border: 1px dashed var(--line); border-radius: 10px;
-    padding: 12px 14px; font-size: 1rem; margin-bottom: 16px; min-height: 24px;
-  }
-  .mAnswerBox.correct{ border-color: #3b82f6; background: rgba(59,130,246,.12); }
-  .mAnswerBox.wrong{ border-color: var(--red); background: rgba(239,68,68,.12); }
-  .mAnswerBox.reveal{ border-color: var(--gold); background: rgba(232,179,76,.1); }
-  .mAnswerBox .placeholder{ color: var(--muted); font-style: italic; font-size:.85rem; }
-  .mVerdictText{ text-align:center; font-size:.82rem; color:var(--muted); margin-top: -6px; margin-bottom: 6px; min-height: 1.2em; }
-  .mCorrectAnswer{
-    text-align:center; font-size:.95rem; font-weight:700; color: var(--gold);
-    margin-top: 12px; min-height: 1.3em;
-  }
+  .mTurn{ text-align:center; color: var(--gold); font-weight:700; min-height: 1.3em; }
   .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
   .grid.full{ grid-template-columns: 1fr; }
+  .mCorrectAnswer{
+    text-align:center; font-size:1.05rem; font-weight:700; color: var(--gold);
+    margin-top: 12px; min-height: 1.3em;
+  }
 
   #editOverlay{ display:none; position:fixed; inset:0; background: rgba(6,9,18,.9); padding: 20px; z-index: 50; }
   #editOverlay textarea{ width:100%; min-height: 50vh; background: var(--bg-panel-2); color: var(--cream); border:1px solid var(--line); border-radius:10px; padding:12px; font: 13px/1.5 monospace; margin-bottom: 12px; }
@@ -78,9 +70,6 @@
     <div class="panel" style="margin-bottom:14px;">
       <div class="mTimer" id="mTimer">00:00</div>
       <div class="mTurn" id="mTurn"></div>
-      <div class="micline" id="mMic"></div>
-      <div class="mAnswerBox" id="mAnswerBox"><span class="placeholder">Aquí aparecerá lo que digas…</span></div>
-      <div class="mVerdictText" id="mVerdictText"></div>
     </div>
 
     <div class="grid">
@@ -93,8 +82,8 @@
     </div>
 
     <div class="grid">
-      <button id="mCorrect" class="primary" disabled>✔ Correcta</button>
-      <button id="mWrong" class="danger" disabled>✘ Incorrecta</button>
+      <button id="mCorrect" class="correctBtn">✔ Correcta</button>
+      <button id="mWrong" class="wrongBtn">✘ Incorrecta</button>
     </div>
     <div class="grid">
       <button id="mPass">⏭ Pasapalabra</button>
@@ -192,21 +181,9 @@ function updateFromHost(state){
   if(!state || state.type !== 'state') return;
   el('mTimer').textContent = state.timerText || '00:00';
   el('mTurn').textContent = state.turnLabel || '';
-  el('mMic').textContent = state.micStatus || '';
-  el('mCorrect').disabled = !state.verdictReady;
-  el('mWrong').disabled = !state.verdictReady;
   el('mStart').disabled = state.startDisabled;
   el('mPause').disabled = state.pauseDisabled;
   el('mPause').textContent = state.pauseLabel || '⏸ Pausa';
-
-  const box = el('mAnswerBox');
-  box.className = 'mAnswerBox' + (state.answerClass ? ' ' + state.answerClass : '');
-  if(state.answerText){
-    box.textContent = state.answerText;
-  } else {
-    box.innerHTML = '<span class="placeholder">Aquí aparecerá lo que digas…</span>';
-  }
-  el('mVerdictText').textContent = state.verdictText || '';
   el('mCorrectAnswer').textContent = state.correctAnswer ? 'Respuesta: ' + state.correctAnswer : '';
 }
 </script>
