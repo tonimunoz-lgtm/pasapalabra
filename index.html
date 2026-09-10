@@ -404,7 +404,10 @@ function escapeHtml(s){ return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;',
 function hasPending(p){ return p.words.some(w=>w.status==='pending'); }
 function nextPendingIndex(p, from){
   const n = p.words.length;
-  for(let step=1; step<=n; step++){
+  // Incluye la propia posición "from": si el jugador aún no la ha intentado
+  // (p.ej. su primer turno, empezando en la A), debe poder aterrizar ahí mismo
+  // en vez de saltársela.
+  for(let step=0; step<n; step++){
     const i = (from+step) % n;
     if(p.words[i].status === 'pending') return i;
   }
