@@ -248,10 +248,6 @@
   </div>
 
   <div class="panel statusbar">
-    <div class="mic-row">
-      <div class="mic-dot" id="micDot"></div>
-      <div class="mic-status" id="micStatus">Micrófono inactivo</div>
-    </div>
     <div class="legend-inline">
       <span><b>Enter</b> correcta</span>
       <span><b>X</b> incorrecta</span>
@@ -270,11 +266,11 @@
   <div class="panel answer-panel">
     <div id="activePlayerLabel" class="player-turn-tag"></div>
     <div class="answer-row">
-      <div class="answer-box" id="answerBox"><span class="placeholder">Aquí aparecerá lo que digas…</span></div>
+      <div class="answer-box" id="answerBox"><span class="placeholder">El jugador responde en voz alta · valora con los botones</span></div>
     </div>
     <div class="verdict-row">
-      <button id="btnCorrect" class="primary" disabled>✔ Correcta (Enter)</button>
-      <button id="btnWrong" class="danger" disabled>✘ Incorrecta (X)</button>
+      <button id="btnCorrect" class="primary">✔ Correcta (Enter)</button>
+      <button id="btnWrong" class="danger">✘ Incorrecta (X)</button>
       <button id="btnPass" class="ghost" disabled>⏭ Pasapalabra (Espacio)</button>
       <button id="btnRepeat" class="ghost" disabled>🔊 Repetir pregunta</button>
       <button id="btnSolution" class="ghost" disabled>👁 Ver respuesta</button>
@@ -357,8 +353,6 @@ let active = 0;
 let timeLeft = 150;
 let timerId = null;
 let running = false;
-let recognition = null;
-let recognizing = false;
 let peer = null, mobileConn = null, pairCode = null;
 let edDraft = ['',''], edTab = 0;
 
@@ -509,20 +503,19 @@ function startTurn(){
   const p = currentPlayer();
   const w = p.words[p.idx];
   el('answerBox').className = 'answer-box';
-  el('answerBox').innerHTML = '<span class="placeholder">Escuchando… habla cuando oigas la pregunta</span>';
-  setVerdictButtons(false);
+  el('answerBox').innerHTML = '<span class="placeholder">El jugador responde en voz alta · valora con los botones</span>';
+  setVerdictButtons(true);
   const center = el(`roscoCenter-${active}`);
   if(center) center.innerHTML = `
     <div class="rc-letter">${w.letter}</div>
-    <div class="rc-clue">${escapeHtml(w.clue)}</div>
-    <div class="rc-status" id="rcStatus">Escuchando…</div>`;
+    <div class="rc-clue">${escapeHtml(w.clue)}</div>`;
   if(gameMode===2){
     el('turnBanner').textContent = `🎙 Turno: ${p.name}`;
     el('activePlayerLabel').textContent = p.name;
   }
   refreshAllRoscos();
   pushState();
-  speak(`${w.letter}. ${w.clue}`, () => { if(running) startListening(); });
+  speak(`${w.letter}. ${w.clue}`);
 }
 
 function speak(text, onEnd){
@@ -530,53 +523,8 @@ function speak(text, onEnd){
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'es-ES'; u.rate = 1;
-  u.onend = () => { if(onEnd) onEnd(); };
+  if(onEnd) u.onend = onEnd;
   window.speechSynthesis.speak(u);
-}
-
-// ---------- Reconocimiento de voz ----------
-function setupRecognition(){
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ el('micStatus').textContent = 'Este navegador no soporta reconocimiento de voz (usa Chrome o Edge).'; return null; }
-  const r = new SR();
-  r.lang = 'es-ES'; r.continuous = false; r.interimResults = true;
-  r.onstart = () => { recognizing = true; el('micDot').classList.add('listening'); el('micStatus').textContent = 'Escuchando tu respuesta…'; };
-  r.onresult = (e) => {
-    let transcript = '';
-    for(let i=e.resultIndex; i<e.results.length; i++) transcript += e.results[i][0].transcript;
-    handleTranscript(transcript, e.results[e.results.length-1].isFinal);
-  };
-  r.onerror = () => { el('micStatus').textContent = 'No se ha entendido bien, pulsa 🔊 para repetir o responde manualmente.'; };
-  r.onend = () => {
-    recognizing = false; el('micDot').classList.remove('listening');
-    if(running) el('micStatus').textContent = 'Micrófono en pausa · pulsa Repetir si no te ha oído';
-  };
-  return r;
-}
-function startListening(){
-  if(!recognition) recognition = setupRecognition();
-  if(!recognition) return;
-  try{ recognition.start(); }catch(e){}
-}
-function stopListening(){
-  if(recognition && recognizing){ try{ recognition.stop(); }catch(e){} }
-}
-function handleTranscript(transcript, isFinal){
-  if(!running) return;
-  const clean = transcript.trim();
-  if(!clean) return;
-  if(normalize(clean).includes('pasapalabra')){ if(isFinal) doPass(); return; }
-  const p = currentPlayer(); const w = p.words[p.idx];
-  const isMatch = similar(clean, w.answer);
-  el('answerBox').textContent = clean;
-  el('answerBox').className = 'answer-box ' + (isMatch ? 'correct' : 'wrong');
-  setVerdictButtons(true);
-  const rc = el('rcStatus');
-  if(rc) rc.textContent = isMatch ? 'Suena correcta ✔' : 'No coincide con la respuesta';
-  el('micStatus').textContent = isMatch
-    ? 'Suena correcta · pulsa Correcta o Enter para confirmar'
-    : 'No coincide · confirma manualmente si crees que es un error de dictado';
-  pushState();
 }
 
 function setVerdictButtons(enabled){
@@ -593,8 +541,6 @@ function doReveal(){
   const p = currentPlayer(); const w = p.words[p.idx];
   el('answerBox').className = 'answer-box reveal';
   el('answerBox').textContent = `Respuesta correcta: ${w.answer}`;
-  const rc = el('rcStatus'); if(rc) rc.textContent = 'Solución revelada';
-  el('btnCorrect').disabled = false; el('btnWrong').disabled = false;
   pushState();
 }
 
@@ -607,15 +553,12 @@ function pauseGame(){
   running = false;
   clearInterval(timerId);
   window.speechSynthesis.cancel();
-  stopListening();
   el('btnPause').textContent = '▶ Reanudar';
-  el('micStatus').textContent = 'En pausa';
   pushState();
 }
 
 function advance(keepTurn, pauseAfter){
   refreshAllStats(); refreshAllRoscos();
-  stopListening();
   const p = currentPlayer();
   const nextOwn = nextPendingIndex(p, p.idx);
 
@@ -677,7 +620,6 @@ function finishGame(){
     if(c0) c0.innerHTML = `<div class="rc-idle">Rosco terminado<br><span style="color:var(--gold)">${p0.correct}</span> aciertos</div>`;
     speak(`Rosco terminado. ${p0.correct} aciertos.`);
   }
-  el('micStatus').textContent = 'Micrófono inactivo';
   setVerdictButtons(false);
   toggleTopButtons(false);
   pushState();
@@ -737,13 +679,11 @@ el('btnPause').addEventListener('click', () => {
 
 el('btnRestart').addEventListener('click', () => {
   running = false; clearInterval(timerId); window.speechSynthesis.cancel();
-  stopListening();
   resetAllPlayers();
   el('timer').textContent = formatTime(parseInt(el('secondsSelect').value,10));
   renderStage();
   updateTimeDisplays(formatTime(parseInt(el('secondsSelect').value,10)));
-  el('answerBox').innerHTML = '<span class="placeholder">Aquí aparecerá lo que digas…</span>';
-  el('micStatus').textContent = 'Micrófono inactivo';
+  el('answerBox').innerHTML = '<span class="placeholder">El jugador responde en voz alta · valora con los botones</span>';
   toggleTopButtons(false);
   el('btnPause').textContent = '⏸ Pausa';
   setVerdictButtons(false);
@@ -756,8 +696,7 @@ el('btnPass').addEventListener('click', doPass);
 el('btnRepeat').addEventListener('click', () => {
   if(!running) return;
   const p = currentPlayer(); const w = p.words[p.idx];
-  stopListening();
-  speak(`${w.letter}. ${w.clue}`, () => { if(running) startListening(); });
+  speak(`${w.letter}. ${w.clue}`);
 });
 el('btnSolution').addEventListener('click', doReveal);
 
@@ -1019,23 +958,11 @@ function handleRemoteCommand(msg){
 function pushState(){
   if(!mobileConn || !mobileConn.open) return;
   const p = currentPlayer();
-  const ab = el('answerBox');
-  const isPlaceholder = !!ab.querySelector('.placeholder');
-  let answerClass = '';
-  if(ab.classList.contains('correct')) answerClass = 'correct';
-  else if(ab.classList.contains('wrong')) answerClass = 'wrong';
-  else if(ab.classList.contains('reveal')) answerClass = 'reveal';
-  const rc = el('rcStatus');
   mobileConn.send({
     type: 'state',
     running,
     timerText: formatTime(Math.max(timeLeft,0)),
     turnLabel: gameMode===2 ? `Turno: ${p.name}` : '',
-    verdictReady: !el('btnCorrect').disabled,
-    micStatus: el('micStatus').textContent,
-    answerText: isPlaceholder ? '' : ab.textContent,
-    answerClass,
-    verdictText: rc ? rc.textContent : '',
     correctAnswer: running ? p.words[p.idx].answer : '',
     startDisabled: el('btnStart').disabled,
     pauseDisabled: el('btnPause').disabled,
