@@ -522,11 +522,19 @@ function startTurn(){
   speak(`${w.letter}. ${w.clue}`);
 }
 
+let voiceWarningShown = false;
 function speak(text, onEnd){
   if(!('speechSynthesis' in window)){ if(onEnd) onEnd(); return; }
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'es-ES'; u.rate = 1;
+  const voices = window.speechSynthesis.getVoices();
+  const esVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('es'));
+  if(esVoice) u.voice = esVoice;
+  if(voices.length === 0 && !voiceWarningShown){
+    voiceWarningShown = true;
+    el('videoIndicator').textContent = '⚠️ Sin voz instalada en este dispositivo';
+  }
   if(onEnd) u.onend = onEnd;
   window.speechSynthesis.speak(u);
 }
@@ -1039,6 +1047,18 @@ function sizeFullscreenRosco(){
 
   holder.style.width = size + 'px';
   holder.style.height = size + 'px';
+
+  // Las letras deben escalar EN PROPORCIÓN al tamaño real del círculo
+  // (no según el ancho de la ventana), o si el círculo se encoge un poco
+  // para dejar hueco al marcador, las letras se quedan igual de grandes
+  // y se amontonan entre sí.
+  const letterSize = Math.max(30, Math.min(94, size * 0.093));
+  const letterFont = letterSize * 0.46;
+  holder.querySelectorAll('.letter').forEach(d => {
+    d.style.width = letterSize + 'px';
+    d.style.height = letterSize + 'px';
+    d.style.fontSize = letterFont + 'px';
+  });
 }
 
 el('chkVirtualBgFs').addEventListener('change', (e) => { el('chkVirtualBg').checked = e.target.checked; });
